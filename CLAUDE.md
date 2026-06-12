@@ -25,3 +25,22 @@ chat-PM con personalidad te acompaña reconociendo hitos y rachas.
 - `app/api/complete-quest/route.ts` — marca quests, suma XP, desbloquea niveles.
 - `lib/` — tipos y helpers de lectura/escritura del estado.
 - `data/` — plantillas y estado del proyecto.
+
+## Estado actual
+
+- **Core loop funcionando:** niveles con quests y XP; completar una quest suma XP, y al cerrar
+  todas las de un nivel este pasa a `done` y desbloquea el siguiente con celebración.
+- **Chat-PM con acciones:** `/api/chat` llama a Claude (`claude-sonnet-4-6`), responde con tono de
+  PM y aplica acciones (`complete_quest` / `add_quest` / `none`) sobre el estado.
+- **`activity_log`** registrando toda acción (quests, mensajes, desbloqueos).
+- **Rediseño "premium oscuro"** aplicado a toda la UI según la nueva `DESIGN.md`.
+- **Componente `AgentAvatar`** (personaje blob SVG) integrado como el PM en el chat, con estados
+  active / thinking / sleeping.
+
+## Próxima sesión
+
+1. Crear repo en GitHub y hacer push.
+2. Deploy en Vercel con la variable de entorno `ANTHROPIC_API_KEY`.
+3. Responderle al PM la definición del core loop en una frase para probar `complete_quest` desde
+   el chat.
+4. Afinaciones de diseño menores.
