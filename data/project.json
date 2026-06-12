@@ -2,7 +2,7 @@
   "id": "proyecto-0",
   "nombre": "Pathfinder (proyecto 0)",
   "template": "product-build",
-  "xp_total": 400,
+  "xp_total": 450,
   "niveles": [
     {
       "id": "pb-1",
@@ -59,7 +59,7 @@
         {
           "id": "q-core-1",
           "texto": "definir el core loop en una frase",
-          "estado": "pending",
+          "estado": "done",
           "xp": 50
         },
         {
@@ -189,6 +189,21 @@
       "timestamp": "2026-06-12T07:53:52.108Z",
       "tipo": "message",
       "descripcion": "PM: ¡Buena, el Setup está completado y ya estás en el Core loop! La API key funcionando es justo lo que necesitabas para arrancar con lo que importa. Ahora la pregunta clave: ¿tienes claro en una frase qué hace el usuario en Pathfinder? Esa es tu próxima quest."
+    },
+    {
+      "timestamp": "2026-06-12T22:42:01.417Z",
+      "tipo": "message",
+      "descripcion": "Usuario: ya definí el core loop: ayudar a terminar proyectos técnicos nivel por nivel con guia y detalle de implementacion"
+    },
+    {
+      "timestamp": "2026-06-12T22:42:05.195Z",
+      "tipo": "quest_completed",
+      "descripcion": "Quest completada: definir el core loop en una frase (+50 XP)"
+    },
+    {
+      "timestamp": "2026-06-12T22:42:05.195Z",
+      "tipo": "message",
+      "descripcion": "PM: Eso es exactamente lo que necesitabas: una frase clara, sin ambigüedad. \"Nivel por nivel con guía y detalle\" ya te dice qué construir y en qué orden. Ahora viene la quest pesada: implementar la acción principal del usuario. ¿Por dónde arrancas, por el input del proyecto o por la vista de niveles?"
     }
   ]
 }
