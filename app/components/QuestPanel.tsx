@@ -1,27 +1,70 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MutationResult, Project, Quest } from "@/lib/types";
+
+/** Señal de "esta quest se completó" (id + nonce para re-disparar aunque sea la misma). */
+export interface CompletedSignal {
+  id: string;
+  n: number;
+}
 
 export default function QuestPanel({
   project,
   onResult,
+  completedSignal,
 }: {
   project: Project;
   onResult: (result: MutationResult) => void;
+  completedSignal?: CompletedSignal | null;
 }) {
   const [busy, setBusy] = useState<Set<string>>(new Set());
   const [floating, setFloating] = useState<Record<string, number>>({});
   const [justCompleted, setJustCompleted] = useState<Set<string>>(new Set());
+  // Evita doble animación cuando el click ya animó y luego llega la señal del mismo id.
+  const animatingRef = useRef<Set<string>>(new Set());
 
   const activeLevel = project.niveles.find((l) => l.estado === "active");
+
+  /** Rebote del check + XP flotante. Idempotente por id mientras dura la animación. */
+  function playCompletionAnim(questId: string, xp: number) {
+    if (animatingRef.current.has(questId)) return;
+    animatingRef.current.add(questId);
+
+    setFloating((f) => ({ ...f, [questId]: xp }));
+    setJustCompleted((s) => new Set(s).add(questId));
+
+    window.setTimeout(() => {
+      setFloating((f) => {
+        const next = { ...f };
+        delete next[questId];
+        return next;
+      });
+      setJustCompleted((s) => {
+        const next = new Set(s);
+        next.delete(questId);
+        return next;
+      });
+      animatingRef.current.delete(questId);
+    }, 320);
+  }
+
+  // Completados que llegan desde el chat (u otra ruta) también animan.
+  useEffect(() => {
+    if (!completedSignal) return;
+    const quest = project.niveles
+      .flatMap((l) => l.quests)
+      .find((q) => q.id === completedSignal.id);
+    if (quest) playCompletionAnim(quest.id, quest.xp);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completedSignal?.n]);
 
   async function completeQuest(quest: Quest) {
     if (quest.estado === "done" || busy.has(quest.id)) return;
 
     setBusy((s) => new Set(s).add(quest.id));
-    // XP flotante: respuesta inmediata a la acción.
-    setFloating((f) => ({ ...f, [quest.id]: quest.xp }));
+    // Respuesta inmediata a la acción (optimista); el dedupe evita repetir con la señal.
+    playCompletionAnim(quest.id, quest.xp);
 
     try {
       const res = await fetch("/api/complete-quest", {
@@ -30,28 +73,13 @@ export default function QuestPanel({
         body: JSON.stringify({ questId: quest.id }),
       });
       const data = (await res.json()) as MutationResult;
-      setJustCompleted((s) => new Set(s).add(quest.id));
       onResult(data);
     } finally {
-      window.setTimeout(() => {
-        setFloating((f) => {
-          const next = { ...f };
-          delete next[quest.id];
-          return next;
-        });
-        setBusy((s) => {
-          const next = new Set(s);
-          next.delete(quest.id);
-          return next;
-        });
-      }, 320);
-      window.setTimeout(() => {
-        setJustCompleted((s) => {
-          const next = new Set(s);
-          next.delete(quest.id);
-          return next;
-        });
-      }, 300);
+      setBusy((s) => {
+        const next = new Set(s);
+        next.delete(quest.id);
+        return next;
+      });
     }
   }
 
