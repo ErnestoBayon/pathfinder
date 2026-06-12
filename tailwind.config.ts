@@ -57,6 +57,12 @@ const config: Config = {
           "30%": { opacity: "0.9" },
           "100%": { transform: "translateY(-10px) scale(1)", opacity: "0" },
         },
+        // Parpadeo ocasional del personaje: abierto casi todo el ciclo, un cierre rápido.
+        blink: {
+          "0%, 90%, 100%": { transform: "scaleY(1)" },
+          "93%": { transform: "scaleY(0.1)" },
+          "96%": { transform: "scaleY(1)" },
+        },
       },
       animation: {
         "check-pop": "check-pop 250ms ease-out",
@@ -65,6 +71,7 @@ const config: Config = {
         bob: "bob 3.2s ease-in-out infinite",
         "dot-float": "dot-float 1.4s ease-in-out infinite",
         "zzz-rise": "zzz-rise 2.4s ease-in-out infinite",
+        blink: "blink 5s ease-in-out infinite",
       },
     },
   },

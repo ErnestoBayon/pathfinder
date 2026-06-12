@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { MutationResult } from "@/lib/types";
+import AgentAvatar from "./AgentAvatar";
 
 interface ChatMessage {
   role: "user" | "pm";
@@ -74,6 +75,7 @@ export default function ChatBox({
   return (
     <div className="flex flex-col p-6">
       <div className="mb-4 flex items-center gap-3">
+        <AgentAvatar color="#2997ff" state={sending ? "thinking" : "active"} size={40} />
         <h2 className="text-sm font-semibold text-ink">Tu PM</h2>
       </div>
 
