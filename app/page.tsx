@@ -8,7 +8,7 @@ export default async function Home() {
   const project = await readProject();
 
   return (
-    <main className="mx-auto max-w-3xl px-5 py-10">
+    <main className="mx-auto max-w-4xl px-6 py-16 sm:py-20">
       <ProjectView initialProject={project} />
     </main>
   );

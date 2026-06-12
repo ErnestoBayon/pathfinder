@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 body {
@@ -11,6 +11,7 @@ body {
   color: theme("colors.ink");
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 /* Scroll horizontal del mapa de niveles, sin barra fea. */
@@ -20,4 +21,14 @@ body {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Glow gradiente azul-violeta para celebraciones (único gradiente permitido junto al del nivel activo). */
+.celebrate-glow {
+  background: radial-gradient(
+    circle,
+    rgba(41, 151, 255, 0.55) 0%,
+    rgba(138, 99, 255, 0.35) 45%,
+    rgba(138, 99, 255, 0) 70%
+  );
 }

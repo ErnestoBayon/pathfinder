@@ -72,26 +72,25 @@ export default function ChatBox({
   }
 
   return (
-    <div className="flex flex-col p-5">
-      <h2 className="mb-3 text-sm font-medium text-muted">Tu PM</h2>
+    <div className="flex flex-col p-6">
+      <div className="mb-4 flex items-center gap-3">
+        <h2 className="text-sm font-semibold text-ink">Tu PM</h2>
+      </div>
 
-      <div ref={scrollRef} className="no-scrollbar mb-3 flex max-h-64 flex-col gap-2 overflow-y-auto">
+      <div ref={scrollRef} className="no-scrollbar mb-4 flex max-h-72 flex-col gap-2.5 overflow-y-auto">
         {messages.length === 0 ? (
           <p className="text-sm text-muted">
             Cuéntame qué avanzaste o pídeme una tarea nueva. Yo llevo la cuenta.
           </p>
         ) : (
           messages.map((m, i) => (
-            <div
-              key={i}
-              className={m.role === "user" ? "flex justify-end" : "flex justify-start"}
-            >
+            <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
               <span
                 className={[
-                  "max-w-[85%] rounded-2xl px-3.5 py-2 text-sm",
+                  "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
                   m.role === "user"
                     ? "bg-active text-white"
-                    : "bg-canvas text-ink",
+                    : "bg-white/[0.06] text-ink",
                 ].join(" ")}
               >
                 {m.text}
@@ -101,27 +100,27 @@ export default function ChatBox({
         )}
         {sending && (
           <div className="flex justify-start">
-            <span className="rounded-2xl bg-canvas px-3.5 py-2 text-sm text-muted">
+            <span className="rounded-2xl bg-white/[0.06] px-4 py-2.5 text-sm text-muted">
               escribiendo…
             </span>
           </div>
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2.5">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder="Escríbele a tu PM…"
           disabled={sending}
-          className="flex-1 rounded-lg border border-line bg-canvas px-3 py-2 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-muted focus:border-active"
+          className="flex-1 rounded-full border border-line bg-white/[0.04] px-5 py-3 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-muted focus:border-active"
         />
         <button
           type="button"
           onClick={() => void send()}
           disabled={sending || input.trim() === ""}
-          className="rounded-lg bg-active px-4 py-2 text-sm font-medium text-white transition-transform duration-200 ease-out hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100"
+          className="rounded-full bg-active px-6 py-3 text-sm font-semibold text-white transition-transform duration-200 ease-out hover:scale-[1.03] disabled:opacity-40 disabled:hover:scale-100"
         >
           Enviar
         </button>

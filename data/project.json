@@ -2,7 +2,7 @@
   "id": "proyecto-0",
   "nombre": "Pathfinder (proyecto 0)",
   "template": "product-build",
-  "xp_total": 150,
+  "xp_total": 400,
   "niveles": [
     {
       "id": "pb-1",
@@ -10,29 +10,64 @@
       "descripcion": "Aterriza la visión, el alcance y para quién es.",
       "estado": "done",
       "quests": [
-        { "id": "q-def-1", "texto": "definir visión y alcance del producto", "estado": "done", "xp": 100 },
-        { "id": "q-def-2", "texto": "elegir el stack tecnológico", "estado": "done", "xp": 50 }
+        {
+          "id": "q-def-1",
+          "texto": "definir visión y alcance del producto",
+          "estado": "done",
+          "xp": 100
+        },
+        {
+          "id": "q-def-2",
+          "texto": "elegir el stack tecnológico",
+          "estado": "done",
+          "xp": 50
+        }
       ]
     },
     {
       "id": "pb-2",
       "nombre": "Setup",
       "descripcion": "Deja el repo, el proyecto y el deploy listos para construir.",
-      "estado": "active",
+      "estado": "done",
       "quests": [
-        { "id": "q-setup-1", "texto": "crear repo y proyecto Next.js", "estado": "pending", "xp": 50 },
-        { "id": "q-setup-2", "texto": "conectar API de Claude en /api/chat", "estado": "pending", "xp": 100 },
-        { "id": "q-setup-3", "texto": "deploy inicial en Vercel", "estado": "pending", "xp": 100 }
+        {
+          "id": "q-setup-1",
+          "texto": "crear repo y proyecto Next.js",
+          "estado": "done",
+          "xp": 50
+        },
+        {
+          "id": "q-setup-2",
+          "texto": "conectar API de Claude en /api/chat",
+          "estado": "done",
+          "xp": 100
+        },
+        {
+          "id": "q-setup-3",
+          "texto": "deploy inicial en Vercel",
+          "estado": "done",
+          "xp": 100
+        }
       ]
     },
     {
       "id": "pb-3",
       "nombre": "Core loop",
       "descripcion": "Construye el ciclo central que hace útil al producto.",
-      "estado": "locked",
+      "estado": "active",
       "quests": [
-        { "id": "q-core-1", "texto": "definir el core loop en una frase", "estado": "pending", "xp": 50 },
-        { "id": "q-core-2", "texto": "implementar la acción principal del usuario", "estado": "pending", "xp": 150 }
+        {
+          "id": "q-core-1",
+          "texto": "definir el core loop en una frase",
+          "estado": "pending",
+          "xp": 50
+        },
+        {
+          "id": "q-core-2",
+          "texto": "implementar la acción principal del usuario",
+          "estado": "pending",
+          "xp": 150
+        }
       ]
     },
     {
@@ -41,8 +76,18 @@
       "descripcion": "Guarda el estado para que nada se pierda entre sesiones.",
       "estado": "locked",
       "quests": [
-        { "id": "q-pers-1", "texto": "elegir dónde guardar los datos", "estado": "pending", "xp": 50 },
-        { "id": "q-pers-2", "texto": "persistir el estado del proyecto", "estado": "pending", "xp": 100 }
+        {
+          "id": "q-pers-1",
+          "texto": "elegir dónde guardar los datos",
+          "estado": "pending",
+          "xp": 50
+        },
+        {
+          "id": "q-pers-2",
+          "texto": "persistir el estado del proyecto",
+          "estado": "pending",
+          "xp": 100
+        }
       ]
     },
     {
@@ -51,7 +96,12 @@
       "descripcion": "Pule la UI para que se sienta clara y satisfactoria.",
       "estado": "locked",
       "quests": [
-        { "id": "q-ui-1", "texto": "aplicar la guía de DESIGN.md a fondo", "estado": "pending", "xp": 100 }
+        {
+          "id": "q-ui-1",
+          "texto": "aplicar la guía de DESIGN.md a fondo",
+          "estado": "pending",
+          "xp": 100
+        }
       ]
     },
     {
@@ -60,8 +110,18 @@
       "descripcion": "Lleva el producto a producción de forma estable.",
       "estado": "locked",
       "quests": [
-        { "id": "q-dep-1", "texto": "configurar variables de entorno en producción", "estado": "pending", "xp": 100 },
-        { "id": "q-dep-2", "texto": "publicar la primera versión estable", "estado": "pending", "xp": 150 }
+        {
+          "id": "q-dep-1",
+          "texto": "configurar variables de entorno en producción",
+          "estado": "pending",
+          "xp": 100
+        },
+        {
+          "id": "q-dep-2",
+          "texto": "publicar la primera versión estable",
+          "estado": "pending",
+          "xp": 150
+        }
       ]
     },
     {
@@ -70,14 +130,65 @@
       "descripcion": "Escucha a usuarios reales e itera con lo aprendido.",
       "estado": "locked",
       "quests": [
-        { "id": "q-fb-1", "texto": "conseguir 3 usuarios que lo prueben", "estado": "pending", "xp": 100 }
+        {
+          "id": "q-fb-1",
+          "texto": "conseguir 3 usuarios que lo prueben",
+          "estado": "pending",
+          "xp": 100
+        }
       ]
     }
   ],
   "activity_log": [
-    { "timestamp": "2026-06-10T09:00:00.000Z", "tipo": "level_unlocked", "descripcion": "Nivel desbloqueado: Definición" },
-    { "timestamp": "2026-06-10T11:30:00.000Z", "tipo": "quest_completed", "descripcion": "Quest completada: definir visión y alcance del producto (+100 XP)" },
-    { "timestamp": "2026-06-10T12:05:00.000Z", "tipo": "quest_completed", "descripcion": "Quest completada: elegir el stack tecnológico (+50 XP)" },
-    { "timestamp": "2026-06-11T08:15:00.000Z", "tipo": "level_unlocked", "descripcion": "Nivel desbloqueado: Setup" }
+    {
+      "timestamp": "2026-06-10T09:00:00.000Z",
+      "tipo": "level_unlocked",
+      "descripcion": "Nivel desbloqueado: Definición"
+    },
+    {
+      "timestamp": "2026-06-10T11:30:00.000Z",
+      "tipo": "quest_completed",
+      "descripcion": "Quest completada: definir visión y alcance del producto (+100 XP)"
+    },
+    {
+      "timestamp": "2026-06-10T12:05:00.000Z",
+      "tipo": "quest_completed",
+      "descripcion": "Quest completada: elegir el stack tecnológico (+50 XP)"
+    },
+    {
+      "timestamp": "2026-06-11T08:15:00.000Z",
+      "tipo": "level_unlocked",
+      "descripcion": "Nivel desbloqueado: Setup"
+    },
+    {
+      "timestamp": "2026-06-12T07:44:46.439Z",
+      "tipo": "quest_completed",
+      "descripcion": "Quest completada: deploy inicial en Vercel (+100 XP)"
+    },
+    {
+      "timestamp": "2026-06-12T07:44:50.128Z",
+      "tipo": "quest_completed",
+      "descripcion": "Quest completada: crear repo y proyecto Next.js (+50 XP)"
+    },
+    {
+      "timestamp": "2026-06-12T07:44:50.613Z",
+      "tipo": "quest_completed",
+      "descripcion": "Quest completada: conectar API de Claude en /api/chat (+100 XP)"
+    },
+    {
+      "timestamp": "2026-06-12T07:44:50.613Z",
+      "tipo": "level_unlocked",
+      "descripcion": "Nivel desbloqueado: Core loop"
+    },
+    {
+      "timestamp": "2026-06-12T07:53:48.377Z",
+      "tipo": "message",
+      "descripcion": "Usuario: ya configuré la API key"
+    },
+    {
+      "timestamp": "2026-06-12T07:53:52.108Z",
+      "tipo": "message",
+      "descripcion": "PM: ¡Buena, el Setup está completado y ya estás en el Core loop! La API key funcionando es justo lo que necesitabas para arrancar con lo que importa. Ahora la pregunta clave: ¿tienes claro en una frase qué hace el usuario en Pathfinder? Esa es tu próxima quest."
+    }
   ]
 }

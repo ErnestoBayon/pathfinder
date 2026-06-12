@@ -11,33 +11,38 @@ function nextDeadline(project: Project): string | null {
   return deadlines[0] ?? null;
 }
 
+function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className={["text-3xl font-semibold tabular-nums tracking-tight", tone ?? "text-ink"].join(" ")}>
+        {value}
+      </span>
+      <span className="text-xs font-medium uppercase tracking-wide text-muted">{label}</span>
+    </div>
+  );
+}
+
 export default function Header({ project }: { project: Project }) {
   const nivelActual = project.niveles.find((l) => l.estado === "active");
   const deadline = nextDeadline(project);
 
   return (
-    <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <header className="flex flex-col gap-8 pt-4">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-muted">Pathfinder</p>
-        <h1 className="mt-1 text-2xl font-semibold text-ink">{project.nombre}</h1>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Pathfinder</p>
+        <h1 className="mt-2 text-4xl font-bold tracking-tight text-ink sm:text-5xl">
+          {project.nombre}
+        </h1>
       </div>
 
-      <dl className="flex items-center gap-6 text-sm">
-        <div>
-          <dt className="text-xs text-muted">XP total</dt>
-          <dd className="font-semibold text-spark tabular-nums">{project.xp_total}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-muted">Nivel actual</dt>
-          <dd className="font-medium text-active">{nivelActual?.nombre ?? "—"}</dd>
-        </div>
-        <div>
-          <dt className="text-xs text-muted">Próximo deadline</dt>
-          <dd className="font-medium text-ink">
-            {deadline ? new Date(deadline).toLocaleDateString("es") : "sin deadline"}
-          </dd>
-        </div>
-      </dl>
+      <div className="flex flex-wrap items-end gap-x-12 gap-y-6">
+        <Stat label="XP total" value={String(project.xp_total)} tone="text-spark" />
+        <Stat label="Nivel actual" value={nivelActual?.nombre ?? "—"} tone="text-active" />
+        <Stat
+          label="Próximo deadline"
+          value={deadline ? new Date(deadline).toLocaleDateString("es") : "Sin deadline"}
+        />
+      </div>
     </header>
   );
 }

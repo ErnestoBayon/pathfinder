@@ -22,12 +22,12 @@ export default function ProjectView({ initialProject }: { initialProject: Projec
   }
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-14">
       <Header project={project} />
 
       <LevelMap niveles={project.niveles} celebrateLevelId={celebrateLevelId} />
 
-      <section className="rounded-xl border border-line bg-card shadow-card">
+      <section className="rounded-2xl border border-line bg-surface">
         <QuestPanel project={project} onResult={applyResult} />
         <div className="border-t border-line" />
         <ChatBox onResult={applyResult} />
