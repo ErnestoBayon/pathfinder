@@ -1,5 +1,7 @@
 import { promises as fs } from "fs";
 import path from "path";
+import projectSeed from "@/data/project.json";
+import templatesSeed from "@/data/templates.json";
 import type {
   ActivityType,
   MutationResult,
@@ -8,22 +10,42 @@ import type {
 } from "./types";
 
 // Datos en JSON local (por ahora). Server-only: este módulo usa fs.
+// Nota: en plataformas con filesystem de solo lectura (p. ej. Vercel) las escrituras
+// degradan con gracia y el estado vive en memoria durante la sesión. La persistencia
+// real es el nivel "Persistencia" (pb-4) del roadmap.
 const DATA_DIR = path.join(process.cwd(), "data");
 const PROJECT_PATH = path.join(DATA_DIR, "project.json");
 const TEMPLATES_PATH = path.join(DATA_DIR, "templates.json");
 
 export async function readProject(): Promise<Project> {
-  const raw = await fs.readFile(PROJECT_PATH, "utf-8");
-  return JSON.parse(raw) as Project;
+  try {
+    const raw = await fs.readFile(PROJECT_PATH, "utf-8");
+    return JSON.parse(raw) as Project;
+  } catch {
+    // FS no disponible: usar el snapshot empaquetado en build (clonado por request).
+    return structuredClone(projectSeed) as unknown as Project;
+  }
 }
 
 export async function writeProject(project: Project): Promise<void> {
-  await fs.writeFile(PROJECT_PATH, JSON.stringify(project, null, 2) + "\n", "utf-8");
+  try {
+    await fs.writeFile(PROJECT_PATH, JSON.stringify(project, null, 2) + "\n", "utf-8");
+  } catch (err) {
+    // FS de solo lectura (Vercel): no persistimos, pero no rompemos la request.
+    console.warn(
+      "writeProject: no se pudo persistir (¿FS de solo lectura?):",
+      err instanceof Error ? err.message : err,
+    );
+  }
 }
 
 export async function readTemplates(): Promise<Templates> {
-  const raw = await fs.readFile(TEMPLATES_PATH, "utf-8");
-  return JSON.parse(raw) as Templates;
+  try {
+    const raw = await fs.readFile(TEMPLATES_PATH, "utf-8");
+    return JSON.parse(raw) as Templates;
+  } catch {
+    return structuredClone(templatesSeed) as unknown as Templates;
+  }
 }
 
 /** TODA acción de la app pasa por aquí: registra una entrada en el activity_log. */
