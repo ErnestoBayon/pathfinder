@@ -8,13 +8,15 @@ chat-PM con personalidad te acompaña reconociendo hitos y rachas.
 
 - **Next.js** (App Router) + **TypeScript**
 - **Tailwind CSS** para la UI
-- **Datos en JSON local** por ahora (`data/templates.json`, `data/project.json`)
+- **Supabase (Postgres)** como persistencia del estado del proyecto (tablas `projects`,
+  `levels`, `quests`, `activity_log`). El acceso es **solo server-side** con la service role key.
+- **JSON local** solo para `data/templates.json` (referencia) y `data/project.json` (fuente del seed).
 - **API de Claude** (`@anthropic-ai/sdk`, modelo `claude-sonnet-4-6`) para el chat-PM en `/api/chat`
 
 ## Reglas
 
 - **SIEMPRE lee `DESIGN.md` antes de crear o modificar cualquier componente de UI.**
-- **TODA acción de la app se registra en `activity_log`** dentro de `project.json`
+- **TODA acción de la app se registra en `activity_log`** (tabla en Supabase)
   (tipos: `quest_completed`, `quest_added`, `message`, `level_unlocked`).
 - La **etapa de la mascota se calcula** del estado del proyecto, nunca se persiste.
 
@@ -23,8 +25,12 @@ chat-PM con personalidad te acompaña reconociendo hitos y rachas.
 - `app/page.tsx` — página principal (mapa de niveles + panel de quest + chat).
 - `app/api/chat/route.ts` — chat-PM con Claude; aplica acciones y registra en el log.
 - `app/api/complete-quest/route.ts` — marca quests, suma XP, desbloquea niveles.
-- `lib/` — tipos y helpers de lectura/escritura del estado.
-- `data/` — plantillas y estado del proyecto.
+- `lib/store.ts` — lectura/escritura del estado contra Supabase (queries dirigidas).
+- `lib/supabase.ts` — cliente Supabase server-only (service role; nunca llega al cliente).
+- `lib/types.ts` — tipos compartidos.
+- `supabase/migrations/0001_init.sql` — esquema de la base.
+- `scripts/seed.ts` — migra `data/project.json` a Supabase (`npm run seed`, idempotente).
+- `data/` — `templates.json` (referencia) y `project.json` (fuente del seed).
 
 ## Estado actual
 
@@ -36,11 +42,15 @@ chat-PM con personalidad te acompaña reconociendo hitos y rachas.
 - **Rediseño "premium oscuro"** aplicado a toda la UI según la nueva `DESIGN.md`.
 - **Componente `AgentAvatar`** (personaje blob SVG) integrado como el PM en el chat, con estados
   active / thinking / sleeping.
+- **Voz del PM** afinada (sección "Voz del PM" en `DESIGN.md`).
+- **Persistencia en Supabase (nivel pb-4):** el estado vive en Postgres. Flujo completo verificado
+  en local — completar quest por click y por chat persiste y sobrevive a reload. El repo está en
+  GitHub y desplegable en Vercel.
 
 ## Próxima sesión
 
-1. Crear repo en GitHub y hacer push.
-2. Deploy en Vercel con la variable de entorno `ANTHROPIC_API_KEY`.
-3. Responderle al PM la definición del core loop en una frase para probar `complete_quest` desde
-   el chat.
-4. Afinaciones de diseño menores.
+1. En Vercel: agregar las tres env vars (`ANTHROPIC_API_KEY`, `SUPABASE_URL`,
+   `SUPABASE_SERVICE_ROLE_KEY`) y hacer **Redeploy** para que producción quede 100% funcional.
+2. Marcar de verdad las quests del nivel **Persistencia** (ya está hecho el trabajo).
+3. Avanzar a los niveles **Interfaz / Deploy / Feedback**.
+4. Más adelante: empezar la **criatura del proyecto** (mascota que evoluciona por niveles).
