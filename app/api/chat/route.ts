@@ -1,12 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
-import {
-  addQuest,
-  completeQuest,
-  logActivity,
-  readProject,
-  writeProject,
-} from "@/lib/store";
+import { addQuest, completeQuest, logActivity, readProject } from "@/lib/store";
 import type { MutationResult } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -110,7 +104,7 @@ export async function POST(req: Request) {
 
   const project = await readProject();
   // TODA acción se registra: primero el mensaje del usuario.
-  logActivity(project, "message", `Usuario: ${message}`);
+  await logActivity("message", `Usuario: ${message}`);
 
   const anthropic = new Anthropic({ apiKey });
 
@@ -145,10 +139,13 @@ export async function POST(req: Request) {
 
   const { reply, action } = extractAction(text);
 
-  // El backend aplica la acción y registra todo.
-  let result: MutationResult = { project };
+  // El backend aplica la acción (escribe en Supabase) y guarda las flags de animación.
+  const flags: Pick<MutationResult, "completedQuestId" | "levelCompletedId" | "unlockedLevelId"> = {};
   if (action && "complete_quest" in action && typeof action.complete_quest === "string") {
-    result = completeQuest(project, action.complete_quest);
+    const r = await completeQuest(action.complete_quest);
+    flags.completedQuestId = r.completedQuestId;
+    flags.levelCompletedId = r.levelCompletedId;
+    flags.unlockedLevelId = r.unlockedLevelId;
   } else if (
     action &&
     "add_quest" in action &&
@@ -156,12 +153,12 @@ export async function POST(req: Request) {
     typeof action.add_quest.texto === "string"
   ) {
     const xp = Number.isFinite(action.add_quest.xp) ? action.add_quest.xp : 50;
-    result = addQuest(project, action.add_quest.texto, xp);
+    await addQuest(action.add_quest.texto, xp);
   }
 
-  // Registrar la respuesta del PM.
-  logActivity(result.project, "message", `PM: ${reply}`);
-  await writeProject(result.project);
+  // Registrar la respuesta del PM y devolver el estado fresco.
+  await logActivity("message", `PM: ${reply}`);
+  const finalProject = await readProject();
 
-  return NextResponse.json({ reply, ...result });
+  return NextResponse.json({ reply, project: finalProject, ...flags });
 }

@@ -1,124 +1,179 @@
-import { promises as fs } from "fs";
-import path from "path";
-import projectSeed from "@/data/project.json";
+import { supabase } from "./supabase";
 import templatesSeed from "@/data/templates.json";
 import type {
   ActivityType,
+  Level,
   MutationResult,
   Project,
+  Quest,
   Templates,
 } from "./types";
 
-// Datos en JSON local (por ahora). Server-only: este módulo usa fs.
-// Nota: en plataformas con filesystem de solo lectura (p. ej. Vercel) las escrituras
-// degradan con gracia y el estado vive en memoria durante la sesión. La persistencia
-// real es el nivel "Persistencia" (pb-4) del roadmap.
-const DATA_DIR = path.join(process.cwd(), "data");
-const PROJECT_PATH = path.join(DATA_DIR, "project.json");
-const TEMPLATES_PATH = path.join(DATA_DIR, "templates.json");
+// Un solo proyecto por ahora.
+const PROJECT_ID = "proyecto-0";
 
+/** Arma el Project completo (niveles → quests + activity_log) desde Supabase. */
 export async function readProject(): Promise<Project> {
-  try {
-    const raw = await fs.readFile(PROJECT_PATH, "utf-8");
-    return JSON.parse(raw) as Project;
-  } catch {
-    // FS no disponible: usar el snapshot empaquetado en build (clonado por request).
-    return structuredClone(projectSeed) as unknown as Project;
-  }
-}
-
-export async function writeProject(project: Project): Promise<void> {
-  try {
-    await fs.writeFile(PROJECT_PATH, JSON.stringify(project, null, 2) + "\n", "utf-8");
-  } catch (err) {
-    // FS de solo lectura (Vercel): no persistimos, pero no rompemos la request.
-    console.warn(
-      "writeProject: no se pudo persistir (¿FS de solo lectura?):",
-      err instanceof Error ? err.message : err,
+  const { data: projectRow, error: pErr } = await supabase
+    .from("projects")
+    .select("id, nombre, template, xp_total")
+    .eq("id", PROJECT_ID)
+    .single();
+  if (pErr || !projectRow) {
+    throw new Error(
+      `No se pudo leer el proyecto desde Supabase (${pErr?.message ?? "no existe"}). ¿Corriste la migración SQL y \`npm run seed\`?`,
     );
   }
-}
 
-export async function readTemplates(): Promise<Templates> {
-  try {
-    const raw = await fs.readFile(TEMPLATES_PATH, "utf-8");
-    return JSON.parse(raw) as Templates;
-  } catch {
-    return structuredClone(templatesSeed) as unknown as Templates;
+  const { data: levelRows, error: lErr } = await supabase
+    .from("levels")
+    .select("id, nombre, descripcion, estado, orden")
+    .eq("project_id", PROJECT_ID)
+    .order("orden", { ascending: true });
+  if (lErr) throw new Error(lErr.message);
+
+  const levelIds = (levelRows ?? []).map((l) => l.id as string);
+
+  let questRows: Array<Record<string, unknown>> = [];
+  if (levelIds.length) {
+    const { data, error: qErr } = await supabase
+      .from("quests")
+      .select("id, level_id, texto, estado, deadline, xp, orden")
+      .in("level_id", levelIds)
+      .order("orden", { ascending: true });
+    if (qErr) throw new Error(qErr.message);
+    questRows = data ?? [];
   }
+
+  const { data: logRows, error: aErr } = await supabase
+    .from("activity_log")
+    .select("timestamp, tipo, descripcion")
+    .eq("project_id", PROJECT_ID)
+    .order("timestamp", { ascending: true });
+  if (aErr) throw new Error(aErr.message);
+
+  const niveles: Level[] = (levelRows ?? []).map((l) => ({
+    id: l.id as string,
+    nombre: l.nombre as string,
+    descripcion: l.descripcion as string,
+    estado: l.estado as Level["estado"],
+    quests: questRows
+      .filter((q) => q.level_id === l.id)
+      .map(
+        (q): Quest => ({
+          id: q.id as string,
+          texto: q.texto as string,
+          estado: q.estado as Quest["estado"],
+          xp: q.xp as number,
+          ...(q.deadline ? { deadline: q.deadline as string } : {}),
+        }),
+      ),
+  }));
+
+  return {
+    id: projectRow.id as string,
+    nombre: projectRow.nombre as string,
+    template: projectRow.template as string,
+    xp_total: projectRow.xp_total as number,
+    niveles,
+    activity_log: (logRows ?? []).map((e) => ({
+      timestamp: e.timestamp as string,
+      tipo: e.tipo as ActivityType,
+      descripcion: e.descripcion as string,
+    })),
+  };
 }
 
-/** TODA acción de la app pasa por aquí: registra una entrada en el activity_log. */
-export function logActivity(
-  project: Project,
-  tipo: ActivityType,
-  descripcion: string,
-): void {
-  project.activity_log.push({
-    timestamp: new Date().toISOString(),
-    tipo,
-    descripcion,
-  });
+/** Inserta una entrada en el historial. TODA acción de la app pasa por aquí. */
+export async function logActivity(tipo: ActivityType, descripcion: string): Promise<void> {
+  const { error } = await supabase
+    .from("activity_log")
+    .insert({ project_id: PROJECT_ID, tipo, descripcion });
+  if (error) throw new Error(error.message);
 }
 
 /**
- * Completa una quest por id: suma su XP, registra la acción y, si el nivel queda
- * terminado, lo marca done y desbloquea el siguiente nivel (con su propio registro).
+ * Completa una quest: marca done, suma XP, registra, y si el nivel queda terminado
+ * lo cierra y desbloquea el siguiente. Devuelve el proyecto fresco + flags de animación.
  */
-export function completeQuest(project: Project, questId: string): MutationResult {
+export async function completeQuest(questId: string): Promise<MutationResult> {
+  const project = await readProject();
   const result: MutationResult = { project };
 
+  let levelIndex = -1;
+  let found: Quest | undefined;
   for (let i = 0; i < project.niveles.length; i++) {
-    const level = project.niveles[i];
-    const quest = level.quests.find((q) => q.id === questId);
-    if (!quest) continue;
-
-    // Idempotente: si ya estaba hecha, no duplicamos XP ni log.
-    if (quest.estado === "done") return result;
-
-    quest.estado = "done";
-    project.xp_total += quest.xp;
-    result.completedQuestId = quest.id;
-    logActivity(
-      project,
-      "quest_completed",
-      `Quest completada: ${quest.texto} (+${quest.xp} XP)`,
-    );
-
-    const allDone = level.quests.length > 0 && level.quests.every((q) => q.estado === "done");
-    if (allDone && level.estado !== "done") {
-      level.estado = "done";
-      result.levelCompletedId = level.id;
-
-      // Desbloquea el siguiente nivel bloqueado.
-      const next = project.niveles.slice(i + 1).find((l) => l.estado === "locked");
-      if (next) {
-        next.estado = "active";
-        result.unlockedLevelId = next.id;
-        logActivity(project, "level_unlocked", `Nivel desbloqueado: ${next.nombre}`);
-      }
+    const q = project.niveles[i].quests.find((x) => x.id === questId);
+    if (q) {
+      levelIndex = i;
+      found = q;
+      break;
     }
-    break;
+  }
+  // Idempotente: si no existe o ya estaba hecha, no duplicamos XP ni log.
+  if (!found || found.estado === "done") return result;
+
+  const quest = found;
+  const level = project.niveles[levelIndex];
+
+  let { error } = await supabase.from("quests").update({ estado: "done" }).eq("id", quest.id);
+  if (error) throw new Error(error.message);
+
+  ({ error } = await supabase
+    .from("projects")
+    .update({ xp_total: project.xp_total + quest.xp })
+    .eq("id", project.id));
+  if (error) throw new Error(error.message);
+
+  await logActivity("quest_completed", `Quest completada: ${quest.texto} (+${quest.xp} XP)`);
+  result.completedQuestId = quest.id;
+
+  const allDone =
+    level.quests.length > 0 &&
+    level.quests.every((q) => q.id === quest.id || q.estado === "done");
+  if (allDone && level.estado !== "done") {
+    ({ error } = await supabase.from("levels").update({ estado: "done" }).eq("id", level.id));
+    if (error) throw new Error(error.message);
+    result.levelCompletedId = level.id;
+
+    const next = project.niveles.slice(levelIndex + 1).find((l) => l.estado === "locked");
+    if (next) {
+      ({ error } = await supabase.from("levels").update({ estado: "active" }).eq("id", next.id));
+      if (error) throw new Error(error.message);
+      await logActivity("level_unlocked", `Nivel desbloqueado: ${next.nombre}`);
+      result.unlockedLevelId = next.id;
+    }
   }
 
+  result.project = await readProject();
   return result;
 }
 
 /** Agrega una quest pendiente al nivel activo y registra la acción. */
-export function addQuest(
-  project: Project,
-  texto: string,
-  xp: number,
-): MutationResult {
+export async function addQuest(texto: string, xp: number): Promise<MutationResult> {
+  const project = await readProject();
   const target =
     project.niveles.find((l) => l.estado === "active") ??
     project.niveles.find((l) => l.estado === "locked");
 
   if (target) {
     const id = `q-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4)}`;
-    target.quests.push({ id, texto, estado: "pending", xp });
-    logActivity(project, "quest_added", `Quest agregada: ${texto} (+${xp} XP)`);
+    const { error } = await supabase.from("quests").insert({
+      id,
+      level_id: target.id,
+      texto,
+      estado: "pending",
+      xp,
+      orden: target.quests.length,
+    });
+    if (error) throw new Error(error.message);
+    await logActivity("quest_added", `Quest agregada: ${texto} (+${xp} XP)`);
   }
 
-  return { project };
+  return { project: await readProject() };
+}
+
+/** Plantillas: datos de referencia estáticos (no viven en la base por ahora). */
+export async function readTemplates(): Promise<Templates> {
+  return templatesSeed as unknown as Templates;
 }
