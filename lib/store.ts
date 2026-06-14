@@ -5,19 +5,68 @@ import type {
   Level,
   MutationResult,
   Project,
+  ProjectSummary,
   Quest,
   Templates,
 } from "./types";
 
-// Un solo proyecto por ahora.
+// Proyecto por defecto (las acciones siguen siendo de un solo proyecto por ahora).
 const PROJECT_ID = "proyecto-0";
 
+/** Resumen de cada proyecto para el Home (3 queries, escala a varios proyectos). */
+export async function listProjects(): Promise<ProjectSummary[]> {
+  const { data: projects, error: pErr } = await supabase
+    .from("projects")
+    .select("id, nombre, xp_total, created_at")
+    .order("created_at", { ascending: true });
+  if (pErr) throw new Error(pErr.message);
+  if (!projects || projects.length === 0) return [];
+
+  const { data: levels, error: lErr } = await supabase
+    .from("levels")
+    .select("id, project_id, nombre, estado, orden")
+    .order("orden", { ascending: true });
+  if (lErr) throw new Error(lErr.message);
+
+  const { data: quests, error: qErr } = await supabase
+    .from("quests")
+    .select("level_id, texto, estado, orden")
+    .order("orden", { ascending: true });
+  if (qErr) throw new Error(qErr.message);
+
+  const allLevels = levels ?? [];
+  const allQuests = quests ?? [];
+
+  return projects.map((p) => {
+    const pLevels = allLevels.filter((l) => l.project_id === p.id);
+    const levelIds = new Set(pLevels.map((l) => l.id));
+    const pQuests = allQuests.filter((q) => levelIds.has(q.level_id as string));
+
+    const questsDone = pQuests.filter((q) => q.estado === "done").length;
+    const activeLevel = pLevels.find((l) => l.estado === "active");
+    const proximaQuest = activeLevel
+      ? (pQuests.find((q) => q.level_id === activeLevel.id && q.estado === "pending")
+          ?.texto as string | undefined) ?? null
+      : null;
+
+    return {
+      id: p.id as string,
+      nombre: p.nombre as string,
+      xp_total: p.xp_total as number,
+      nivelActual: (activeLevel?.nombre as string | undefined) ?? null,
+      questsDone,
+      questsTotal: pQuests.length,
+      proximaQuest,
+    };
+  });
+}
+
 /** Arma el Project completo (niveles → quests + activity_log) desde Supabase. */
-export async function readProject(): Promise<Project> {
+export async function readProject(projectId: string = PROJECT_ID): Promise<Project> {
   const { data: projectRow, error: pErr } = await supabase
     .from("projects")
     .select("id, nombre, template, xp_total")
-    .eq("id", PROJECT_ID)
+    .eq("id", projectId)
     .single();
   if (pErr || !projectRow) {
     throw new Error(
@@ -28,7 +77,7 @@ export async function readProject(): Promise<Project> {
   const { data: levelRows, error: lErr } = await supabase
     .from("levels")
     .select("id, nombre, descripcion, estado, orden")
-    .eq("project_id", PROJECT_ID)
+    .eq("project_id", projectId)
     .order("orden", { ascending: true });
   if (lErr) throw new Error(lErr.message);
 
@@ -48,7 +97,7 @@ export async function readProject(): Promise<Project> {
   const { data: logRows, error: aErr } = await supabase
     .from("activity_log")
     .select("timestamp, tipo, descripcion")
-    .eq("project_id", PROJECT_ID)
+    .eq("project_id", projectId)
     .order("timestamp", { ascending: true });
   if (aErr) throw new Error(aErr.message);
 

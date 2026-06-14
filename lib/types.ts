@@ -52,6 +52,19 @@ export interface Template {
 
 export type Templates = Record<string, Template>;
 
+/** Resumen de un proyecto para las cards del Home. */
+export interface ProjectSummary {
+  id: string;
+  nombre: string;
+  xp_total: number;
+  /** Nombre del nivel activo, o null si no hay. */
+  nivelActual: string | null;
+  questsDone: number;
+  questsTotal: number;
+  /** Texto de la primera quest pendiente del nivel activo, o null. */
+  proximaQuest: string | null;
+}
+
 /** Resultado de aplicar una acción al proyecto (sirve para disparar animaciones en el cliente). */
 export interface MutationResult {
   project: Project;

@@ -27,6 +27,9 @@ const config: Config = {
         glow: "0 0 0 1px rgba(41,151,255,0.6), 0 0 24px 2px rgba(41,151,255,0.35)",
         // Glow de XP ámbar.
         ember: "0 0 12px rgba(255,214,10,0.55)",
+        // Elevación de sticky note (sutil sobre el fondo oscuro).
+        note: "0 1px 2px rgba(0,0,0,0.4), 0 12px 28px -18px rgba(0,0,0,0.75)",
+        "note-hover": "0 2px 4px rgba(0,0,0,0.45), 0 20px 40px -20px rgba(0,0,0,0.85)",
       },
       keyframes: {
         "check-pop": {
