@@ -1,28 +1,12 @@
-import ProjectCard from "./components/ProjectCard";
-import NewProjectCard from "./components/NewProjectCard";
-import { listProjects } from "@/lib/store";
-
-// Lee el estado fresco de Supabase en cada request.
-export const dynamic = "force-dynamic";
-
-export default async function Home() {
-  const projects = await listProjects();
-
+// Placeholder de reset v2. El Paso 3 reemplaza esta página por la landing real.
+export default function Home() {
   return (
-    <main className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
-      <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Pathfinder</p>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-ink sm:text-5xl">
-          Tus proyectos
-        </h1>
-      </header>
-
-      <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {projects.map((p) => (
-          <ProjectCard key={p.id} project={p} />
-        ))}
-        <NewProjectCard />
-      </div>
+    <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Pathfinder</p>
+      <h1 className="mt-3 text-4xl font-bold tracking-tight text-ink sm:text-5xl">v2 — reset</h1>
+      <p className="mt-4 max-w-md text-sm leading-relaxed text-muted">
+        Task manager ligero con IA para Data Scientists. Landing y home en construcción.
+      </p>
     </main>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { MutationResult } from "@/lib/types";
 import AgentAvatar from "./AgentAvatar";
 
 interface ChatMessage {
@@ -9,16 +8,7 @@ interface ChatMessage {
   text: string;
 }
 
-interface ChatResponse extends MutationResult {
-  reply?: string;
-  error?: string;
-}
-
-export default function ChatBox({
-  onResult,
-}: {
-  onResult: (result: MutationResult) => void;
-}) {
+export default function ChatBox() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -46,17 +36,11 @@ export default function ChatBox({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
       });
-      const data = (await res.json()) as ChatResponse;
-
-      if (!res.ok || data.error) {
-        setMessages((m) => [
-          ...m,
-          { role: "pm", text: data.error ?? "Algo salió mal. Intenta de nuevo." },
-        ]);
-      } else {
-        if (data.reply) setMessages((m) => [...m, { role: "pm", text: data.reply as string }]);
-        if (data.project) onResult(data);
-      }
+      const data = (await res.json()) as { reply?: string; error?: string };
+      setMessages((m) => [
+        ...m,
+        { role: "pm", text: data.reply ?? data.error ?? "Algo salió mal. Intenta de nuevo." },
+      ]);
     } catch {
       setMessages((m) => [...m, { role: "pm", text: "No pude conectar. Revisa tu conexión." }]);
     } finally {
@@ -82,7 +66,7 @@ export default function ChatBox({
       <div ref={scrollRef} className="no-scrollbar mb-4 flex max-h-72 flex-col gap-2.5 overflow-y-auto">
         {messages.length === 0 ? (
           <p className="text-sm text-muted">
-            Cuéntame qué avanzaste o pídeme una tarea nueva. Yo llevo la cuenta.
+            Cuéntame en qué andas o pídeme orden con tus tareas. Aquí ando.
           </p>
         ) : (
           messages.map((m, i) => (

@@ -14,21 +14,11 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Scroll horizontal del mapa de niveles, sin barra fea. */
+/* Scroll interno sin barra fea. */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
-
-/* Glow gradiente azul-violeta para celebraciones (único gradiente permitido junto al del nivel activo). */
-.celebrate-glow {
-  background: radial-gradient(
-    circle,
-    rgba(41, 151, 255, 0.55) 0%,
-    rgba(138, 99, 255, 0.35) 45%,
-    rgba(138, 99, 255, 0) 70%
-  );
 }

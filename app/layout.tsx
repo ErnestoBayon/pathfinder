@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Pathfinder",
-  description: "Tu project manager personal, nivel por nivel.",
+  description: "Task manager ligero con IA para Data Scientists.",
 };
 
 export default function RootLayout({
