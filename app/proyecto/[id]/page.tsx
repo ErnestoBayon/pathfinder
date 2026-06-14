@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ChatBox from "../../components/ChatBox";
 import TaskList from "../../components/TaskList";
-import { getProject, listTasks } from "@/lib/store";
+import { getProject, listTasks, loadMessages } from "@/lib/store";
 
 // Lee el estado fresco de Supabase en cada request.
 export const dynamic = "force-dynamic";
@@ -12,6 +12,7 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
   if (!project) notFound();
 
   const tasks = await listTasks(params.id).catch(() => []);
+  const messages = await loadMessages(params.id).catch(() => []);
 
   return (
     <div className="min-h-screen">
@@ -44,7 +45,7 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
         </section>
 
         <section className="mt-6 rounded-2xl border border-line bg-surface shadow-note">
-          <ChatBox projectId={project.id} />
+          <ChatBox projectId={project.id} initialMessages={messages} />
         </section>
       </main>
     </div>

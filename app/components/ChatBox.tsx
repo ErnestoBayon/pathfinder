@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import type { Message } from "@/lib/types";
 import AgentAvatar from "./AgentAvatar";
 
 interface ChatMessage {
@@ -8,8 +9,19 @@ interface ChatMessage {
   text: string;
 }
 
-export default function ChatBox({ projectId }: { projectId?: string }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export default function ChatBox({
+  projectId,
+  initialMessages = [],
+}: {
+  projectId?: string;
+  initialMessages?: Message[];
+}) {
+  const [messages, setMessages] = useState<ChatMessage[]>(() =>
+    initialMessages.map((m) => ({
+      role: m.role === "assistant" ? "pm" : "user",
+      text: m.content,
+    })),
+  );
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -25,19 +37,17 @@ export default function ChatBox({ projectId }: { projectId?: string }) {
     const text = input.trim();
     if (!text || sending) return;
 
-    // Snapshot del historial previo (antes de agregar este turno) para mandar contexto.
-    const history = messages;
-
     setInput("");
     setSending(true);
     setMessages((m) => [...m, { role: "user", text }]);
     scrollToBottom();
 
     try {
+      // El historial vive en Supabase: /api/chat lo carga y persiste por su cuenta.
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, projectId, history }),
+        body: JSON.stringify({ message: text, projectId }),
       });
       const data = (await res.json()) as { reply?: string; error?: string };
       setMessages((m) => [
