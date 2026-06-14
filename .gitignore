@@ -19,9 +19,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
+# local env files (incluye backups del editor: .env.local.save, .env.local.bak, etc.)
 .env.local
-.env*.local
+.env*.local*
 
 # typescript
 *.tsbuildinfo
