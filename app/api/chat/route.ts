@@ -37,6 +37,44 @@ Tareas:
 ${tareas}`;
 }
 
+// Segunda pasada: pide al modelo extraer las tareas accionables del mensaje del PM
+// como un JSON array de strings. Cualquier fallo (parse, formato) devuelve [].
+async function extractTasks(anthropic: Anthropic, reply: string): Promise<string[]> {
+  try {
+    const res = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 512,
+      messages: [
+        {
+          role: "user",
+          content: `Analiza este mensaje y extrae las tareas o pasos accionables como un JSON array de strings.
+Si no hay tareas concretas, responde solo con: []
+Responde ÚNICAMENTE con el JSON, sin texto extra, sin comillas adicionales.
+
+Mensaje: ${reply}`,
+        },
+      ],
+    });
+    const raw = res.content
+      .filter((b): b is Anthropic.TextBlock => b.type === "text")
+      .map((b) => b.text)
+      .join("")
+      .trim();
+    // Por si el modelo envuelve la respuesta en un bloque ```json.
+    const cleaned = raw
+      .replace(/^```(?:json)?/i, "")
+      .replace(/```$/, "")
+      .trim();
+    const parsed: unknown = JSON.parse(cleaned);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
+      .map((t) => t.trim());
+  } catch {
+    return [];
+  }
+}
+
 export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -92,7 +130,8 @@ export async function POST(req: Request) {
     if (projectId && reply) {
       await saveMessage(projectId, "assistant", reply).catch(() => {});
     }
-    return NextResponse.json({ reply });
+    const suggestedTasks = reply ? await extractTasks(anthropic, reply) : [];
+    return NextResponse.json({ reply, suggestedTasks });
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";
     return NextResponse.json({ error: `No pude hablar con Claude: ${detail}` }, { status: 502 });
