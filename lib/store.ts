@@ -1,5 +1,7 @@
 import { supabase } from "./supabase";
-import type { Project } from "./types";
+import type { Project, Task, TaskState } from "./types";
+
+const TASK_COLS = "id, project_id, texto, estado, deadline, created_at";
 
 /** Lista los proyectos para el Home (más reciente al final). */
 export async function listProjects(): Promise<Project[]> {
@@ -32,4 +34,43 @@ export async function getProject(id: string): Promise<Project | null> {
     .maybeSingle();
   if (error) throw new Error(error.message);
   return (data as Project | null) ?? null;
+}
+
+/** Lista las tareas de un proyecto (más antigua primero). */
+export async function listTasks(projectId: string): Promise<Task[]> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .select(TASK_COLS)
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Task[];
+}
+
+/** Crea una tarea (estado `pending`) en un proyecto y la devuelve. */
+export async function createTask(
+  projectId: string,
+  texto: string,
+  deadline: string | null = null,
+): Promise<Task> {
+  const id = `task-${crypto.randomUUID()}`;
+  const { data, error } = await supabase
+    .from("tasks")
+    .insert({ id, project_id: projectId, texto, estado: "pending", deadline })
+    .select(TASK_COLS)
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Task;
+}
+
+/** Fija el estado de una tarea (`pending`/`done`) y devuelve la tarea actualizada. */
+export async function toggleTask(id: string, estado: TaskState): Promise<Task> {
+  const { data, error } = await supabase
+    .from("tasks")
+    .update({ estado })
+    .eq("id", id)
+    .select(TASK_COLS)
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Task;
 }
