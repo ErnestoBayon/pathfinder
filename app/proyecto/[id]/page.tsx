@@ -44,7 +44,7 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
         </section>
 
         <section className="mt-6 rounded-2xl border border-line bg-surface shadow-note">
-          <ChatBox />
+          <ChatBox projectId={project.id} />
         </section>
       </main>
     </div>

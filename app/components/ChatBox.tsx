@@ -8,7 +8,7 @@ interface ChatMessage {
   text: string;
 }
 
-export default function ChatBox() {
+export default function ChatBox({ projectId }: { projectId?: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -25,6 +25,9 @@ export default function ChatBox() {
     const text = input.trim();
     if (!text || sending) return;
 
+    // Snapshot del historial previo (antes de agregar este turno) para mandar contexto.
+    const history = messages;
+
     setInput("");
     setSending(true);
     setMessages((m) => [...m, { role: "user", text }]);
@@ -34,7 +37,7 @@ export default function ChatBox() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, projectId, history }),
       });
       const data = (await res.json()) as { reply?: string; error?: string };
       setMessages((m) => [
