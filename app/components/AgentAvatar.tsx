@@ -5,7 +5,7 @@ import { useId } from "react";
 export type AgentState = "active" | "thinking" | "sleeping";
 
 interface AgentAvatarProps {
-  /** Color base del agente (el PM es azul #2997ff). */
+  /** Color base del agente (el PM es índigo #4F46E5). */
   color?: string;
   state?: AgentState;
   /** Lado del avatar en px. */
@@ -34,7 +34,7 @@ function shade(hex: string, amt: number): string {
  * ojos de punto negros, cara dividida verticalmente en dos tonos del color del agente.
  */
 export default function AgentAvatar({
-  color = "#2997ff",
+  color = "#4F46E5",
   state = "active",
   size = 40,
 }: AgentAvatarProps) {
