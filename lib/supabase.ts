@@ -15,4 +15,10 @@ if (!url || !serviceKey) {
 
 export const supabase = createClient(url, serviceKey, {
   auth: { persistSession: false, autoRefreshToken: false },
+  // Next.js instrumenta fetch y cachea las lecturas del cliente Supabase en su Data Cache
+  // (persiste en .next/cache). Forzamos `no-store` para que las queries SSR siempre lean
+  // datos frescos de Postgres (p. ej. un proyecto recién creado aparece de inmediato).
+  global: {
+    fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+  },
 });
