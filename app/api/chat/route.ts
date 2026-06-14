@@ -1,14 +1,16 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
-import { getProject, listTasks } from "@/lib/store";
-import type { Task } from "@/lib/types";
+import { getProject, listTasks, loadMessages, saveMessage } from "@/lib/store";
+import type { Message, Task } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 const MODEL = "claude-sonnet-4-6";
 
 // Voz del PM (fuente de verdad: sección "Voz del PM" en DESIGN.md).
-const SYSTEM_PROMPT = `Eres el project manager (PM) personal de quien usa Pathfinder, un task manager
+const SYSTEM_PROMPT = `Responde siempre en texto plano. Sin asteriscos, sin ##, sin ---, sin tablas con |. Escribe como si fuera un mensaje de WhatsApp entre colegas.
+
+Eres el project manager (PM) personal de quien usa Pathfinder, un task manager
 ligero con IA para Data Scientists. Tu trabajo es acompañar, ordenar prioridades y mantener el ritmo.
 
 Reglas de voz (tu respuesta las cumple SIEMPRE):
@@ -35,11 +37,6 @@ Tareas:
 ${tareas}`;
 }
 
-interface ChatTurn {
-  role?: unknown;
-  text?: unknown;
-}
-
 export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -52,32 +49,31 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const message: string = (body?.message ?? "").toString().trim();
   const projectId: string = (body?.projectId ?? "").toString();
-  const history: ChatTurn[] = Array.isArray(body?.history) ? body.history : [];
   if (!message) {
     return NextResponse.json({ error: "message requerido" }, { status: 400 });
   }
 
-  // Carga el proyecto y sus tareas para darle al PM contexto del trabajo real.
+  // Carga proyecto, tareas e historial persistido para darle contexto al PM.
+  // El historial es la fuente de verdad de Supabase, no estado del cliente.
   let system = SYSTEM_PROMPT;
+  let priorTurns: Anthropic.MessageParam[] = [];
   if (projectId) {
-    const [project, tasks] = await Promise.all([
+    const [project, tasks, prior] = await Promise.all([
       getProject(projectId).catch(() => null),
       listTasks(projectId).catch(() => [] as Task[]),
+      loadMessages(projectId).catch(() => [] as Message[]),
     ]);
     if (project) {
       system += buildContext(project.nombre, project.descripcion, tasks);
     }
+    priorTurns = prior.map((m) => ({ role: m.role, content: m.content }));
   }
 
-  // Historial previo de la conversación (mapeamos "pm" -> "assistant").
-  const priorTurns = history
-    .map((t) => {
-      const text = (t?.text ?? "").toString().trim();
-      if (!text) return null;
-      const role = t?.role === "pm" ? "assistant" : "user";
-      return { role, content: text } as Anthropic.MessageParam;
-    })
-    .filter((m): m is Anthropic.MessageParam => m !== null);
+  // Persistimos el turno del usuario antes de llamar a Claude para que sobreviva
+  // a recargas aunque el PM falle. (Silencioso si la tabla aún no existe.)
+  if (projectId) {
+    await saveMessage(projectId, "user", message).catch(() => {});
+  }
 
   const anthropic = new Anthropic({ apiKey });
 
@@ -93,6 +89,9 @@ export async function POST(req: Request) {
       .map((b) => b.text)
       .join("\n")
       .trim();
+    if (projectId && reply) {
+      await saveMessage(projectId, "assistant", reply).catch(() => {});
+    }
     return NextResponse.json({ reply });
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";

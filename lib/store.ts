@@ -1,7 +1,8 @@
 import { supabase } from "./supabase";
-import type { Project, Task, TaskState } from "./types";
+import type { ChatRole, Message, Project, Task, TaskState } from "./types";
 
 const TASK_COLS = "id, project_id, texto, estado, deadline, created_at";
+const MESSAGE_COLS = "id, project_id, role, content, created_at";
 
 /** Lista los proyectos para el Home (más reciente al final). */
 export async function listProjects(): Promise<Project[]> {
@@ -73,4 +74,30 @@ export async function toggleTask(id: string, estado: TaskState): Promise<Task> {
     .single();
   if (error) throw new Error(error.message);
   return data as Task;
+}
+
+/** Carga el historial de chat de un proyecto (más antiguo primero). */
+export async function loadMessages(projectId: string): Promise<Message[]> {
+  const { data, error } = await supabase
+    .from("messages")
+    .select(MESSAGE_COLS)
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Message[];
+}
+
+/** Guarda un mensaje del chat (el id lo genera la base con gen_random_uuid). */
+export async function saveMessage(
+  projectId: string,
+  role: ChatRole,
+  content: string,
+): Promise<Message> {
+  const { data, error } = await supabase
+    .from("messages")
+    .insert({ project_id: projectId, role, content })
+    .select(MESSAGE_COLS)
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Message;
 }

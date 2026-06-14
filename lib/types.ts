@@ -30,6 +30,18 @@ export interface ActivityEntry {
   descripcion: string;
 }
 
+export type ChatRole = "user" | "assistant";
+
+// Tabla `messages`: id (uuid), project_id (text), role ('user'/'assistant'),
+// content (text), created_at (timestamptz). Historial persistente del chat-PM.
+export interface Message {
+  id: string;
+  project_id: string;
+  role: ChatRole;
+  content: string;
+  created_at?: string;
+}
+
 /** Resumen de un proyecto para las cards del Home (incluye conteo de tareas pendientes). */
 export interface ProjectSummary {
   id: string;
