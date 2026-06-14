@@ -1,12 +1,17 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import type { Message } from "@/lib/types";
 import AgentAvatar from "./AgentAvatar";
+
+// Estado del banner de tareas sugeridas, por mensaje del PM.
+type TaskBannerStatus = "idle" | "saving" | "done" | "hidden";
 
 interface ChatMessage {
   role: "user" | "pm";
   text: string;
+  suggestedTasks?: string[];
+  taskStatus?: TaskBannerStatus;
 }
 
 export default function ChatBox({
@@ -49,16 +54,55 @@ export default function ChatBox({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text, projectId }),
       });
-      const data = (await res.json()) as { reply?: string; error?: string };
+      const data = (await res.json()) as {
+        reply?: string;
+        error?: string;
+        suggestedTasks?: string[];
+      };
+      const suggested =
+        data.reply && Array.isArray(data.suggestedTasks) ? data.suggestedTasks : [];
       setMessages((m) => [
         ...m,
-        { role: "pm", text: data.reply ?? data.error ?? "Algo salió mal. Intenta de nuevo." },
+        {
+          role: "pm",
+          text: data.reply ?? data.error ?? "Algo salió mal. Intenta de nuevo.",
+          suggestedTasks: suggested,
+          taskStatus: "idle",
+        },
       ]);
     } catch {
       setMessages((m) => [...m, { role: "pm", text: "No pude conectar. Revisa tu conexión." }]);
     } finally {
       setSending(false);
       scrollToBottom();
+    }
+  }
+
+  // Guarda las tareas sugeridas de un mensaje en el proyecto, en paralelo.
+  async function saveTasks(index: number, tasks: string[]) {
+    if (!projectId) return;
+    setMessages((m) => m.map((msg, i) => (i === index ? { ...msg, taskStatus: "saving" } : msg)));
+    try {
+      await Promise.all(
+        tasks.map((texto) =>
+          fetch(`/api/projects/${projectId}/tasks`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ texto }),
+          }).then((r) => {
+            if (!r.ok) throw new Error();
+          }),
+        ),
+      );
+      setMessages((m) => m.map((msg, i) => (i === index ? { ...msg, taskStatus: "done" } : msg)));
+      window.setTimeout(() => {
+        setMessages((m) =>
+          m.map((msg, i) => (i === index ? { ...msg, taskStatus: "hidden" } : msg)),
+        );
+      }, 2000);
+    } catch {
+      // Volvemos a "idle" para que pueda reintentar.
+      setMessages((m) => m.map((msg, i) => (i === index ? { ...msg, taskStatus: "idle" } : msg)));
     }
   }
 
@@ -82,20 +126,49 @@ export default function ChatBox({
             Cuéntame en qué andas o pídeme orden con tus tareas. Aquí ando.
           </p>
         ) : (
-          messages.map((m, i) => (
-            <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-              <span
-                className={[
-                  "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-                  m.role === "user"
-                    ? "bg-accent text-white"
-                    : "bg-canvas text-ink",
-                ].join(" ")}
-              >
-                {m.text}
-              </span>
-            </div>
-          ))
+          messages.map((m, i) => {
+            const n = m.suggestedTasks?.length ?? 0;
+            const showBanner = m.role === "pm" && !!projectId && n > 0 && m.taskStatus !== "hidden";
+            return (
+              <Fragment key={i}>
+                <div className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+                  <span
+                    className={[
+                      "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                      m.role === "user" ? "bg-accent text-white" : "bg-canvas text-ink",
+                    ].join(" ")}
+                  >
+                    {m.text}
+                  </span>
+                </div>
+                {showBanner && (
+                  <div className="flex justify-start">
+                    <div className="w-full max-w-[85%]">
+                      {m.taskStatus === "done" ? (
+                        <p className="border-t border-line pt-2.5 text-xs font-medium text-done">
+                          ✓ {n} {n === 1 ? "tarea agregada" : "tareas agregadas"}
+                        </p>
+                      ) : (
+                        <div className="flex items-center justify-between gap-3 border-t border-line pt-2.5">
+                          <span className="text-xs text-muted">
+                            {n} {n === 1 ? "tarea sugerida" : "tareas sugeridas"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => void saveTasks(i, m.suggestedTasks ?? [])}
+                            disabled={m.taskStatus === "saving"}
+                            className="shrink-0 rounded-full bg-accent px-4 py-1.5 text-xs font-semibold text-white transition-colors duration-200 ease-out hover:bg-accent-hover disabled:opacity-40 disabled:hover:bg-accent"
+                          >
+                            {m.taskStatus === "saving" ? "Agregando…" : "Agregar al proyecto"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </Fragment>
+            );
+          })
         )}
         {sending && (
           <div className="flex justify-start">
