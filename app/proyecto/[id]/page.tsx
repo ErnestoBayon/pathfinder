@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import ChatBox from "../../components/ChatBox";
-import TaskList from "../../components/TaskList";
+import ProjectWorkspace from "../../components/ProjectWorkspace";
 import { getProject, listTasks, loadMessages } from "@/lib/store";
 
 // Lee el estado fresco de Supabase en cada request.
@@ -40,13 +39,11 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
           )}
         </header>
 
-        <section className="mt-10 rounded-2xl border border-line bg-surface shadow-note">
-          <TaskList projectId={project.id} initialTasks={tasks} />
-        </section>
-
-        <section className="mt-6 rounded-2xl border border-line bg-surface shadow-note">
-          <ChatBox projectId={project.id} initialMessages={messages} />
-        </section>
+        <ProjectWorkspace
+          projectId={project.id}
+          initialTasks={tasks}
+          initialMessages={messages}
+        />
       </main>
     </div>
   );

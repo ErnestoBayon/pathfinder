@@ -17,9 +17,11 @@ interface ChatMessage {
 export default function ChatBox({
   projectId,
   initialMessages = [],
+  onTasksCreated,
 }: {
   projectId?: string;
   initialMessages?: Message[];
+  onTasksCreated?: () => void;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     initialMessages.map((m) => ({
@@ -95,6 +97,7 @@ export default function ChatBox({
         ),
       );
       setMessages((m) => m.map((msg, i) => (i === index ? { ...msg, taskStatus: "done" } : msg)));
+      onTasksCreated?.();
       window.setTimeout(() => {
         setMessages((m) =>
           m.map((msg, i) => (i === index ? { ...msg, taskStatus: "hidden" } : msg)),

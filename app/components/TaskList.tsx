@@ -1,19 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Task } from "@/lib/types";
 
 export default function TaskList({
   projectId,
   initialTasks,
+  taskVersion = 0,
 }: {
   projectId: string;
   initialTasks: Task[];
+  taskVersion?: number;
 }) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [texto, setTexto] = useState("");
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Re-lee las tareas cuando el padre incrementa la versión (p. ej. el chat creó
+  // tareas). Saltamos el primer render: initialTasks ya trae el estado fresco del SSR.
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/tasks`);
+        const data = (await res.json()) as { tasks?: Task[] };
+        if (!cancelled && res.ok && Array.isArray(data.tasks)) setTasks(data.tasks);
+      } catch {
+        // Si el refetch falla, dejamos la lista como está.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, taskVersion]);
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
