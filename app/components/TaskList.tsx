@@ -1,6 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { PRIORIDAD_ORDEN } from "@/lib/types";
 import type { Prioridad, Task } from "@/lib/types";
 
@@ -42,6 +59,28 @@ function CalendarIcon() {
   );
 }
 
+type SortableState = ReturnType<typeof useSortable>;
+interface SortableRenderProps {
+  setNodeRef: SortableState["setNodeRef"];
+  setActivatorNodeRef: SortableState["setActivatorNodeRef"];
+  attributes: SortableState["attributes"];
+  listeners: SortableState["listeners"];
+  style: React.CSSProperties;
+  isDragging: boolean;
+}
+
+// Envoltorio sortable por fila: aísla el hook useSortable y entrega los refs/listeners
+// al markup de la fila vía render prop, sin propagar decenas de props.
+function Sortable({ id, children }: { id: string; children: (p: SortableRenderProps) => ReactNode }) {
+  const { setNodeRef, setActivatorNodeRef, attributes, listeners, transform, transition, isDragging } =
+    useSortable({ id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+  return <>{children({ setNodeRef, setActivatorNodeRef, attributes, listeners, style, isDragging })}</>;
+}
+
 export default function TaskList({
   projectId,
   initialTasks,
@@ -61,6 +100,12 @@ export default function TaskList({
   const [editText, setEditText] = useState("");
   // ESC cancela; evita que el onBlur que dispara después guarde el cambio.
   const skipBlur = useRef(false);
+
+  const sensors = useSensors(
+    // Pequeño umbral para no arrancar un drag al hacer click normal en la fila.
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   // Re-lee las tareas cuando el padre incrementa la versión (p. ej. el chat creó
   // o reorganizó tareas). Saltamos el primer render: initialTasks ya viene del SSR.
@@ -175,6 +220,45 @@ export default function TaskList({
     }
   }
 
+  // Drag & drop: solo reordena dentro de la misma prioridad. Al soltar, reasigna
+  // `orden` secuencial dentro del grupo y lo persiste en Supabase.
+  async function onDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const activeTask = tasks.find((t) => t.id === active.id);
+    const overTask = tasks.find((t) => t.id === over.id);
+    if (!activeTask || !overTask || activeTask.prioridad !== overTask.prioridad) return;
+
+    const group = sortForDisplay(tasks.filter((t) => t.prioridad === activeTask.prioridad));
+    const from = group.findIndex((t) => t.id === active.id);
+    const to = group.findIndex((t) => t.id === over.id);
+    if (from === -1 || to === -1) return;
+    const reordered = arrayMove(group, from, to);
+
+    const ordenById = new Map(reordered.map((t, i) => [t.id, i]));
+    const prevTasks = tasks;
+    setTasks((prev) =>
+      prev.map((t) => (ordenById.has(t.id) ? { ...t, orden: ordenById.get(t.id)! } : t)),
+    );
+    setError(null);
+    try {
+      await Promise.all(
+        reordered.map((t, i) =>
+          fetch(`/api/tasks/${t.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orden: i }),
+          }).then((r) => {
+            if (!r.ok) throw new Error();
+          }),
+        ),
+      );
+    } catch {
+      setTasks(prevTasks);
+      setError("No pude guardar el nuevo orden. Intenta de nuevo.");
+    }
+  }
+
   const pendientes = tasks.filter((t) => t.estado !== "done").length;
   const ordered = sortForDisplay(tasks);
 
@@ -192,106 +276,124 @@ export default function TaskList({
           Aún no hay tareas. Agrega la primera abajo.
         </p>
       ) : (
-        <ul className="mb-4 flex flex-col gap-1.5">
-          {ordered.map((task) => {
-            const done = task.estado === "done";
-            const editing = editingId === task.id;
-            const st = PRIORIDAD_STYLE[task.prioridad];
-            return (
-              <li key={task.id}>
-                <div className="group flex items-center gap-2.5 rounded-lg px-2 py-2 transition-colors duration-200 ease-out hover:bg-canvas">
-                  <button
-                    type="button"
-                    onClick={() => toggle(task)}
-                    aria-label={done ? "Marcar como pendiente" : "Marcar como hecha"}
-                    className={[
-                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs leading-none transition-colors duration-200 ease-out",
-                      done ? "border-done bg-done text-white" : "border-line text-transparent hover:border-accent",
-                    ].join(" ")}
-                  >
-                    ✓
-                  </button>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={ordered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            <ul className="mb-4 flex flex-col gap-1.5">
+              {ordered.map((task) => {
+                const done = task.estado === "done";
+                const editing = editingId === task.id;
+                const st = PRIORIDAD_STYLE[task.prioridad];
+                return (
+                  <Sortable key={task.id} id={task.id}>
+                    {({ setNodeRef, setActivatorNodeRef, attributes, listeners, style, isDragging }) => (
+                      <li ref={setNodeRef} style={style} className={isDragging ? "relative z-10 opacity-70" : ""}>
+                        <div className="group flex items-center gap-1.5 rounded-lg px-1 py-2 transition-colors duration-200 ease-out hover:bg-canvas">
+                          <span
+                            ref={setActivatorNodeRef}
+                            {...attributes}
+                            {...listeners}
+                            aria-label="Reordenar tarea"
+                            className="shrink-0 cursor-grab touch-none select-none px-0.5 text-sm leading-none text-muted opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 active:cursor-grabbing"
+                          >
+                            ⠿
+                          </span>
 
-                  {editing ? (
-                    <input
-                      autoFocus
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          commitEdit(task);
-                        } else if (e.key === "Escape") {
-                          e.preventDefault();
-                          skipBlur.current = true;
-                          cancelEdit();
-                        }
-                      }}
-                      onBlur={() => {
-                        if (skipBlur.current) {
-                          skipBlur.current = false;
-                          return;
-                        }
-                        commitEdit(task);
-                      }}
-                      className="min-w-0 flex-1 rounded-md border border-accent bg-surface px-2 py-0.5 text-sm leading-relaxed text-ink outline-none"
-                    />
-                  ) : (
-                    <span
-                      onClick={() => startEdit(task)}
-                      className={[
-                        "min-w-0 flex-1 cursor-text truncate text-sm leading-relaxed",
-                        done ? "text-muted line-through" : "text-ink",
-                      ].join(" ")}
-                    >
-                      {task.texto}
-                    </span>
-                  )}
+                          <button
+                            type="button"
+                            onClick={() => toggle(task)}
+                            aria-label={done ? "Marcar como pendiente" : "Marcar como hecha"}
+                            className={[
+                              "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs leading-none transition-colors duration-200 ease-out",
+                              done ? "border-done bg-done text-white" : "border-line text-transparent hover:border-accent",
+                            ].join(" ")}
+                          >
+                            ✓
+                          </button>
 
-                  {/* Deadline: ícono al hover; si hay fecha, se muestra "15 jun". */}
-                  <div className="relative flex shrink-0 items-center justify-end">
-                    <input
-                      type="date"
-                      value={task.deadline ? task.deadline.slice(0, 10) : ""}
-                      onChange={(e) => setDeadline(task, e.target.value)}
-                      aria-label="Fecha límite"
-                      className="absolute inset-0 z-10 w-full cursor-pointer opacity-0"
-                    />
-                    {task.deadline ? (
-                      <span className="pointer-events-none whitespace-nowrap text-xs text-muted">
-                        {formatDeadline(task.deadline)}
-                      </span>
-                    ) : (
-                      <span className="pointer-events-none text-muted opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
-                        <CalendarIcon />
-                      </span>
+                          {editing ? (
+                            <input
+                              autoFocus
+                              value={editText}
+                              onChange={(e) => setEditText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  commitEdit(task);
+                                } else if (e.key === "Escape") {
+                                  e.preventDefault();
+                                  skipBlur.current = true;
+                                  cancelEdit();
+                                }
+                              }}
+                              onBlur={() => {
+                                if (skipBlur.current) {
+                                  skipBlur.current = false;
+                                  return;
+                                }
+                                commitEdit(task);
+                              }}
+                              className="min-w-0 flex-1 rounded-md border border-accent bg-surface px-2 py-0.5 text-sm leading-relaxed text-ink outline-none"
+                            />
+                          ) : (
+                            <span
+                              onClick={() => startEdit(task)}
+                              className={[
+                                "min-w-0 flex-1 cursor-text truncate text-sm leading-relaxed",
+                                done ? "text-muted line-through" : "text-ink",
+                              ].join(" ")}
+                            >
+                              {task.texto}
+                            </span>
+                          )}
+
+                          {/* Deadline: ícono al hover; si hay fecha, se muestra "15 jun". */}
+                          <div className="relative flex shrink-0 items-center justify-end">
+                            <input
+                              type="date"
+                              value={task.deadline ? task.deadline.slice(0, 10) : ""}
+                              onChange={(e) => setDeadline(task, e.target.value)}
+                              aria-label="Fecha límite"
+                              className="absolute inset-0 z-10 w-full cursor-pointer opacity-0"
+                            />
+                            {task.deadline ? (
+                              <span className="pointer-events-none whitespace-nowrap text-xs text-muted">
+                                {formatDeadline(task.deadline)}
+                              </span>
+                            ) : (
+                              <span className="pointer-events-none text-muted opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
+                                <CalendarIcon />
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Badge de prioridad: click cicla alta → media → baja. */}
+                          <button
+                            type="button"
+                            onClick={() => cyclePrioridad(task)}
+                            title="Cambiar prioridad"
+                            className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium leading-none transition-colors duration-200 ease-out"
+                            style={{ color: st.color, backgroundColor: st.bg }}
+                          >
+                            {st.label}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => void remove(task)}
+                            aria-label="Eliminar tarea"
+                            className="shrink-0 rounded-md px-1 text-base leading-none text-muted opacity-0 transition-opacity duration-200 ease-out hover:text-ink group-hover:opacity-100"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </li>
                     )}
-                  </div>
-
-                  {/* Badge de prioridad: click cicla alta → media → baja. */}
-                  <button
-                    type="button"
-                    onClick={() => cyclePrioridad(task)}
-                    title="Cambiar prioridad"
-                    className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium leading-none transition-colors duration-200 ease-out"
-                    style={{ color: st.color, backgroundColor: st.bg }}
-                  >
-                    {st.label}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => void remove(task)}
-                    aria-label="Eliminar tarea"
-                    className="shrink-0 rounded-md px-1 text-base leading-none text-muted opacity-0 transition-opacity duration-200 ease-out hover:text-ink group-hover:opacity-100"
-                  >
-                    ×
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                  </Sortable>
+                );
+              })}
+            </ul>
+          </SortableContext>
+        </DndContext>
       )}
 
       <form onSubmit={add} className="flex items-center gap-2.5">
