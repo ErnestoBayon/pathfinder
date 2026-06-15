@@ -26,10 +26,12 @@ const RANK = Object.fromEntries(PRIORIDAD_ORDEN.map((p, i) => [p, i])) as Record
 
 // Estilo del badge de prioridad: el color ilumina, no rellena (ver DESIGN.md).
 const PRIORIDAD_STYLE: Record<Prioridad, { label: string; color: string; bg: string }> = {
-  alta: { label: "Alta", color: "#ff453a", bg: "rgba(255,69,58,0.14)" },
-  media: { label: "Media", color: "#ffd60a", bg: "rgba(255,214,10,0.14)" },
-  baja: { label: "Baja", color: "#34c759", bg: "rgba(52,199,89,0.14)" },
+  alta: { label: "Alta", color: "#dc2626", bg: "rgba(220,38,38,0.12)" },
+  media: { label: "Media", color: "#d97706", bg: "rgba(217,119,6,0.12)" },
+  baja: { label: "Baja", color: "#16a34a", bg: "rgba(22,163,74,0.12)" },
 };
+
+const STAR_COLOR = "#7c3aed";
 
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
@@ -55,6 +57,14 @@ function CalendarIcon() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
       <rect x="3" y="4" width="18" height="18" rx="2" />
       <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  );
+}
+
+function StarIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M12 2l2.9 6.26 6.85.6-5.18 4.52 1.55 6.7L12 17.1 5.88 20.58l1.55-6.7L2.25 8.86l6.85-.6z" />
     </svg>
   );
 }
@@ -349,20 +359,21 @@ export default function TaskList({
                             </span>
                           )}
 
-                          {/* Tarea clave: ⭐ siempre visible si está marcada; al hover si no. */}
+                          {/* Tarea clave: ⭐ morada, siempre visible si está marcada; al hover (atenuada) si no. */}
                           <button
                             type="button"
                             onClick={() => toggleClave(task)}
                             aria-label={task.es_clave ? "Quitar de tareas clave" : "Marcar como tarea clave"}
                             title="Tarea clave"
+                            style={{ color: STAR_COLOR }}
                             className={[
-                              "shrink-0 text-sm leading-none transition-opacity duration-200 ease-out",
+                              "flex shrink-0 items-center leading-none transition-opacity duration-200 ease-out",
                               task.es_clave
                                 ? "opacity-100"
-                                : "opacity-0 grayscale group-hover:opacity-60 hover:!opacity-100 hover:!grayscale-0",
+                                : "opacity-0 group-hover:opacity-50 hover:!opacity-100",
                             ].join(" ")}
                           >
-                            ⭐
+                            <StarIcon />
                           </button>
 
                           {/* Deadline: ícono al hover; si hay fecha, se muestra "15 jun". */}
