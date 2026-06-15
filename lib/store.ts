@@ -1,34 +1,48 @@
 import { supabase } from "./supabase";
+import { createClient } from "./supabase/server";
 import type { ChatRole, Message, Project, Task, TaskState } from "./types";
 
 const TASK_COLS = "id, project_id, texto, estado, deadline, created_at";
 const MESSAGE_COLS = "id, project_id, role, content, created_at";
 
-/** Lista los proyectos para el Home (más reciente al final). */
+/** Lista los proyectos del usuario autenticado (más reciente al final). */
 export async function listProjects(): Promise<Project[]> {
-  const { data, error } = await supabase
+  const db = createClient();
+  const {
+    data: { user },
+  } = await db.auth.getUser();
+  if (!user) return [];
+  // RLS ya filtra por dueño; el .eq es defensa en profundidad por si falta la policy.
+  const { data, error } = await db
     .from("projects")
     .select("id, nombre, descripcion, created_at")
+    .eq("user_id", user.id)
     .order("created_at", { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as Project[];
 }
 
-/** Crea un proyecto nuevo y lo devuelve. `descripcion` puede ir vacía. */
+/** Crea un proyecto del usuario autenticado y lo devuelve. `descripcion` puede ir vacía. */
 export async function createProject(nombre: string, descripcion: string): Promise<Project> {
+  const db = createClient();
+  const {
+    data: { user },
+  } = await db.auth.getUser();
+  if (!user) throw new Error("No hay sesión activa.");
   const id = `proj-${crypto.randomUUID()}`;
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("projects")
-    .insert({ id, nombre, descripcion })
+    .insert({ id, nombre, descripcion, user_id: user.id })
     .select("id, nombre, descripcion, created_at")
     .single();
   if (error) throw new Error(error.message);
   return data as Project;
 }
 
-/** Lee un proyecto por id. Devuelve null si no existe. */
+/** Lee un proyecto por id. RLS lo limita al dueño; devuelve null si no existe o no es tuyo. */
 export async function getProject(id: string): Promise<Project | null> {
-  const { data, error } = await supabase
+  const db = createClient();
+  const { data, error } = await db
     .from("projects")
     .select("id, nombre, descripcion, created_at")
     .eq("id", id)
