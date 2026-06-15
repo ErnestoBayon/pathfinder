@@ -78,16 +78,28 @@ export async function createTask(
   return data as Task;
 }
 
-/** Fija el estado de una tarea (`pending`/`done`) y devuelve la tarea actualizada. */
-export async function toggleTask(id: string, estado: TaskState): Promise<Task> {
+/** Campos editables de una tarea. Todos opcionales: solo se actualiza lo que venga. */
+export interface TaskPatch {
+  texto?: string;
+  estado?: TaskState;
+}
+
+/** Aplica un patch parcial a una tarea y devuelve la tarea actualizada. */
+export async function updateTask(id: string, patch: TaskPatch): Promise<Task> {
   const { data, error } = await supabase
     .from("tasks")
-    .update({ estado })
+    .update(patch)
     .eq("id", id)
     .select(TASK_COLS)
     .single();
   if (error) throw new Error(error.message);
   return data as Task;
+}
+
+/** Elimina una tarea por id. */
+export async function deleteTask(id: string): Promise<void> {
+  const { error } = await supabase.from("tasks").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 /** Carga el historial de chat de un proyecto (más antiguo primero). */

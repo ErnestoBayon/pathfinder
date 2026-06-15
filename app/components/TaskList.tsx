@@ -17,6 +17,12 @@ export default function TaskList({
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Edición inline: id de la tarea en edición y su texto temporal.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  // ESC cancela; evita que el onBlur que dispara después guarde el cambio.
+  const skipBlur = useRef(false);
+
   // Re-lee las tareas cuando el padre incrementa la versión (p. ej. el chat creó
   // tareas). Saltamos el primer render: initialTasks ya trae el estado fresco del SSR.
   const firstRender = useRef(true);
@@ -89,6 +95,54 @@ export default function TaskList({
     }
   }
 
+  function startEdit(task: Task) {
+    setEditingId(task.id);
+    setEditText(task.texto);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditText("");
+  }
+
+  async function commitEdit(task: Task) {
+    const value = editText.trim();
+    // Sin cambios o vacío: salimos sin tocar nada.
+    if (!value || value === task.texto) {
+      cancelEdit();
+      return;
+    }
+    cancelEdit();
+    // Optimista: aplicamos el nuevo texto y revertimos si el PATCH falla.
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, texto: value } : t)));
+    setError(null);
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texto: value }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, texto: task.texto } : t)));
+      setError("No pude guardar el cambio. Intenta de nuevo.");
+    }
+  }
+
+  async function remove(task: Task) {
+    // Optimista: la quitamos de la lista y la devolvemos si el DELETE falla.
+    const prevTasks = tasks;
+    setTasks((prev) => prev.filter((t) => t.id !== task.id));
+    setError(null);
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+    } catch {
+      setTasks(prevTasks);
+      setError("No pude eliminar la tarea. Intenta de nuevo.");
+    }
+  }
+
   const pendientes = tasks.filter((t) => t.estado !== "done").length;
 
   return (
@@ -108,33 +162,67 @@ export default function TaskList({
         <ul className="mb-4 flex flex-col gap-1.5">
           {tasks.map((task) => {
             const done = task.estado === "done";
+            const editing = editingId === task.id;
             return (
               <li key={task.id}>
-                <button
-                  type="button"
-                  onClick={() => void toggle(task)}
-                  className="flex w-full items-start gap-3 rounded-lg px-2 py-2 text-left transition-colors duration-200 ease-out hover:bg-canvas"
-                >
-                  <span
-                    aria-hidden
+                <div className="group flex items-start gap-3 rounded-lg px-2 py-2 transition-colors duration-200 ease-out hover:bg-canvas">
+                  <button
+                    type="button"
+                    onClick={() => void toggle(task)}
+                    aria-label={done ? "Marcar como pendiente" : "Marcar como hecha"}
                     className={[
                       "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs leading-none transition-colors duration-200 ease-out",
-                      done
-                        ? "border-done bg-done text-white"
-                        : "border-line text-transparent",
+                      done ? "border-done bg-done text-white" : "border-line text-transparent hover:border-accent",
                     ].join(" ")}
                   >
                     ✓
-                  </span>
-                  <span
-                    className={[
-                      "text-sm leading-relaxed",
-                      done ? "text-muted line-through" : "text-ink",
-                    ].join(" ")}
+                  </button>
+
+                  {editing ? (
+                    <input
+                      autoFocus
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          void commitEdit(task);
+                        } else if (e.key === "Escape") {
+                          e.preventDefault();
+                          skipBlur.current = true;
+                          cancelEdit();
+                        }
+                      }}
+                      onBlur={() => {
+                        if (skipBlur.current) {
+                          skipBlur.current = false;
+                          return;
+                        }
+                        void commitEdit(task);
+                      }}
+                      className="flex-1 rounded-md border border-accent bg-surface px-2 py-0.5 text-sm leading-relaxed text-ink outline-none"
+                    />
+                  ) : (
+                    <span
+                      onClick={() => startEdit(task)}
+                      className={[
+                        "flex-1 cursor-text text-sm leading-relaxed",
+                        done ? "text-muted line-through" : "text-ink",
+                      ].join(" ")}
+                    >
+                      {task.texto}
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => void remove(task)}
+                    aria-label="Eliminar tarea"
+                    className="shrink-0 rounded-md px-1.5 text-base leading-none text-muted opacity-0 transition-opacity duration-200 ease-out hover:text-ink group-hover:opacity-100"
                   >
-                    {task.texto}
-                  </span>
-                </button>
+                    ×
+                  </button>
+                </div>
               </li>
             );
           })}
