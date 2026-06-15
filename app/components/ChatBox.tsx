@@ -60,7 +60,10 @@ export default function ChatBox({
         reply?: string;
         error?: string;
         suggestedTasks?: string[];
+        organized?: number;
       };
+      // El PM reorganizó prioridades/fechas de tareas existentes: refrescamos la lista.
+      if (data.organized && data.organized > 0) onTasksCreated?.();
       const suggested =
         data.reply && Array.isArray(data.suggestedTasks) ? data.suggestedTasks : [];
       setMessages((m) => [

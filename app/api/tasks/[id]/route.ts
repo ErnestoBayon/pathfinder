@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { deleteTask, updateTask, type TaskPatch } from "@/lib/store";
+import { PRIORIDAD_ORDEN } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 // PATCH /api/tasks/[id] — actualiza los campos que vengan en el body
-// (estado y/o texto). Valida cada campo presente; ignora los ausentes.
+// (estado, texto, prioridad, deadline u orden). Valida cada campo presente.
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const body = await req.json().catch(() => ({}));
   const patch: TaskPatch = {};
@@ -22,6 +23,30 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       return NextResponse.json({ error: "El texto no puede ir vacío" }, { status: 400 });
     }
     patch.texto = texto;
+  }
+
+  if (body?.prioridad !== undefined) {
+    if (!PRIORIDAD_ORDEN.includes(body.prioridad)) {
+      return NextResponse.json(
+        { error: "prioridad debe ser alta, media o baja" },
+        { status: 400 },
+      );
+    }
+    patch.prioridad = body.prioridad;
+  }
+
+  if (body?.deadline !== undefined) {
+    // null o "" limpia la fecha; cualquier otra cosa se guarda como string (YYYY-MM-DD).
+    patch.deadline =
+      body.deadline === null || body.deadline === "" ? null : body.deadline.toString();
+  }
+
+  if (body?.orden !== undefined) {
+    const orden = Number(body.orden);
+    if (!Number.isFinite(orden)) {
+      return NextResponse.json({ error: "orden debe ser un número" }, { status: 400 });
+    }
+    patch.orden = orden;
   }
 
   if (Object.keys(patch).length === 0) {

@@ -1,9 +1,25 @@
 import { supabase } from "./supabase";
 import { createClient } from "./supabase/server";
-import type { ChatRole, Message, Project, Task, TaskState } from "./types";
+import { PRIORIDAD_ORDEN } from "./types";
+import type { ChatRole, Message, Prioridad, Project, Task, TaskState } from "./types";
 
-const TASK_COLS = "id, project_id, texto, estado, deadline, created_at";
+const TASK_COLS = "id, project_id, texto, estado, prioridad, orden, deadline, created_at";
 const MESSAGE_COLS = "id, project_id, role, content, created_at";
+
+const RANK = Object.fromEntries(
+  PRIORIDAD_ORDEN.map((p, i) => [p, i]),
+) as Record<Prioridad, number>;
+
+// Orden de presentación: alta → media → baja; dentro de cada grupo por `orden`,
+// y como desempate por antigüedad (created_at ascendente).
+function sortTasks(tasks: Task[]): Task[] {
+  return [...tasks].sort(
+    (a, b) =>
+      RANK[a.prioridad] - RANK[b.prioridad] ||
+      a.orden - b.orden ||
+      (a.created_at ?? "").localeCompare(b.created_at ?? ""),
+  );
+}
 
 /** Lista los proyectos del usuario autenticado (más reciente al final). */
 export async function listProjects(): Promise<Project[]> {
@@ -51,27 +67,33 @@ export async function getProject(id: string): Promise<Project | null> {
   return (data as Project | null) ?? null;
 }
 
-/** Lista las tareas de un proyecto (más antigua primero). */
+/** Lista las tareas de un proyecto, ya ordenadas por prioridad y `orden`. */
 export async function listTasks(projectId: string): Promise<Task[]> {
   const { data, error } = await supabase
     .from("tasks")
     .select(TASK_COLS)
-    .eq("project_id", projectId)
-    .order("created_at", { ascending: true });
+    .eq("project_id", projectId);
   if (error) throw new Error(error.message);
-  return (data ?? []) as Task[];
+  return sortTasks((data ?? []) as Task[]);
 }
 
 /** Crea una tarea (estado `pending`) en un proyecto y la devuelve. */
 export async function createTask(
   projectId: string,
   texto: string,
-  deadline: string | null = null,
+  opts: { prioridad?: Prioridad; deadline?: string | null } = {},
 ): Promise<Task> {
   const id = `task-${crypto.randomUUID()}`;
   const { data, error } = await supabase
     .from("tasks")
-    .insert({ id, project_id: projectId, texto, estado: "pending", deadline })
+    .insert({
+      id,
+      project_id: projectId,
+      texto,
+      estado: "pending",
+      prioridad: opts.prioridad ?? "media",
+      deadline: opts.deadline ?? null,
+    })
     .select(TASK_COLS)
     .single();
   if (error) throw new Error(error.message);
@@ -82,6 +104,9 @@ export async function createTask(
 export interface TaskPatch {
   texto?: string;
   estado?: TaskState;
+  prioridad?: Prioridad;
+  deadline?: string | null;
+  orden?: number;
 }
 
 /** Aplica un patch parcial a una tarea y devuelve la tarea actualizada. */
