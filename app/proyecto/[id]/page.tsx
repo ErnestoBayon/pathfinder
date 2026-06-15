@@ -12,6 +12,7 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
 
   const tasks = await listTasks(params.id).catch(() => []);
   const messages = await loadMessages(params.id).catch(() => []);
+  const hasDeadline = tasks.some((t) => t.deadline);
 
   return (
     <div className="min-h-screen">
@@ -36,6 +37,14 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
             <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted">
               {project.descripcion}
             </p>
+          )}
+          {hasDeadline && (
+            <Link
+              href="/calendar"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-xs font-medium text-muted transition-colors duration-200 ease-out hover:bg-blue-50 hover:text-accent"
+            >
+              📅 Ver en calendario
+            </Link>
           )}
         </header>
 
