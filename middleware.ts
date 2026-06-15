@@ -32,7 +32,10 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  const isProtected = pathname.startsWith("/home") || pathname.startsWith("/proyecto");
+  const isProtected =
+    pathname.startsWith("/home") ||
+    pathname.startsWith("/proyecto") ||
+    pathname.startsWith("/calendar");
   const isAuthPage = pathname === "/login" || pathname === "/signup";
 
   if (!user && isProtected) {
@@ -52,5 +55,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Solo corre en las rutas relevantes (evita assets estáticos e imágenes).
-  matcher: ["/", "/home/:path*", "/proyecto/:path*", "/login", "/signup"],
+  matcher: ["/", "/home/:path*", "/proyecto/:path*", "/calendar/:path*", "/login", "/signup"],
 };

@@ -1,5 +1,6 @@
 import HomeProjects from "../components/HomeProjects";
 import LogoutButton from "../components/LogoutButton";
+import TopNav from "../components/TopNav";
 import { listProjects } from "@/lib/store";
 
 // Lee el estado fresco de Supabase en cada request.
@@ -10,14 +11,17 @@ export default async function Home() {
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
-      <header className="flex items-start justify-between gap-4">
+      <header className="flex items-center justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Pathfinder</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
             Tus proyectos
           </h1>
         </div>
-        <LogoutButton />
+        <div className="flex items-center gap-4">
+          <TopNav />
+          <LogoutButton />
+        </div>
       </header>
 
       <HomeProjects initialProjects={projects} />
