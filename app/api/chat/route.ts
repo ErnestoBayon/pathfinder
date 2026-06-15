@@ -25,10 +25,12 @@ Reglas de voz (tu respuesta las cumple SIEMPRE):
 - Español casual mexicano, tutea siempre.
 - Si te piden organizar, priorizar o ponerle fechas a las tareas, hazlo: confirma en una frase
   natural qué reorganizaste (nunca menciones campos ni jerga). Los cambios de prioridad y fecha
-  se aplican solos en la lista; tú solo cuéntalo en lenguaje humano.`;
+  se aplican solos en la lista; tú solo cuéntalo en lenguaje humano.
+- Si detectas que una tarea es bloqueante o clave para avanzar (otras dependen de ella), márcala
+  como clave: aparecerá con una estrella. Dilo en lenguaje natural, sin tecnicismos.`;
 
-// Señales de que el usuario quiere reorganizar/priorizar/poner fechas.
-const ORGANIZE_INTENT = /(organiz|prioriz|prioridad|urgent|orden(a|en|ar)|deadline|fecha|para cu[aá]ndo|vence|antes de|para (hoy|ma[ñn]ana|el ))/i;
+// Señales de que el usuario quiere reorganizar/priorizar/poner fechas/marcar tareas clave.
+const ORGANIZE_INTENT = /(organiz|prioriz|prioridad|urgent|orden(a|en|ar)|deadline|fecha|para cu[aá]ndo|vence|antes de|para (hoy|ma[ñn]ana|el )|clave|bloque|depende|esencial)/i;
 
 // Bloque de contexto del proyecto que se inyecta al system prompt.
 // Las tareas van por su texto natural; ningún id ni nombre de campo sale de aquí.
@@ -93,7 +95,10 @@ async function organizeTasks(
   if (!tasks.length) return 0;
   const today = new Date().toISOString().slice(0, 10);
   const lista = tasks
-    .map((t) => `- "${t.texto}" (prioridad ${t.prioridad}, ${t.deadline ? t.deadline.slice(0, 10) : "sin fecha"})`)
+    .map(
+      (t) =>
+        `- "${t.texto}" (prioridad ${t.prioridad}, ${t.deadline ? t.deadline.slice(0, 10) : "sin fecha"}, clave: ${t.es_clave ? "sí" : "no"})`,
+    )
     .join("\n");
 
   try {
@@ -109,9 +114,9 @@ Hoy es ${today}.
 Tareas actuales:
 ${lista}
 
-Devuelve ÚNICAMENTE un JSON array con las tareas que deban cambiar de prioridad o fecha.
-Cada elemento: {"texto": "<el texto EXACTO de la tarea, tal cual aparece arriba>", "prioridad": "alta|media|baja", "deadline": "YYYY-MM-DD"}
-Reglas: incluye "prioridad" y/o "deadline" solo si cambian; usa "deadline": null para quitar una fecha; omite las tareas que no cambian; si nada cambia responde []. No inventes tareas nuevas. Sin texto extra.`,
+Devuelve ÚNICAMENTE un JSON array con las tareas que deban cambiar de prioridad, fecha o marcado de clave.
+Cada elemento: {"texto": "<el texto EXACTO de la tarea, tal cual aparece arriba>", "prioridad": "alta|media|baja", "deadline": "YYYY-MM-DD", "es_clave": true|false}
+Reglas: incluye un campo solo si cambia; usa "deadline": null para quitar una fecha; marca "es_clave": true si la tarea es bloqueante o clave para avanzar (otras dependen de ella); omite las tareas que no cambian; si nada cambia responde []. No inventes tareas nuevas. Sin texto extra.`,
         },
       ],
     });
@@ -135,7 +140,7 @@ Reglas: incluye "prioridad" y/o "deadline" solo si cambian; usa "deadline": null
       const task = byText.get(texto);
       if (!task) continue;
 
-      const patch: { prioridad?: Prioridad; deadline?: string | null } = {};
+      const patch: { prioridad?: Prioridad; deadline?: string | null; es_clave?: boolean } = {};
       if (typeof rec.prioridad === "string" && PRIORIDAD_ORDEN.includes(rec.prioridad as Prioridad)) {
         patch.prioridad = rec.prioridad as Prioridad;
       }
@@ -144,6 +149,7 @@ Reglas: incluye "prioridad" y/o "deadline" solo si cambian; usa "deadline": null
         if (dl === null) patch.deadline = null;
         else if (typeof dl === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dl)) patch.deadline = dl;
       }
+      if (typeof rec.es_clave === "boolean") patch.es_clave = rec.es_clave;
       if (Object.keys(patch).length === 0) continue;
 
       try {

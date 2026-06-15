@@ -28,7 +28,7 @@ const RANK = Object.fromEntries(PRIORIDAD_ORDEN.map((p, i) => [p, i])) as Record
 const PRIORIDAD_STYLE: Record<Prioridad, { label: string; color: string; bg: string }> = {
   alta: { label: "Alta", color: "#ff453a", bg: "rgba(255,69,58,0.14)" },
   media: { label: "Media", color: "#ffd60a", bg: "rgba(255,214,10,0.14)" },
-  baja: { label: "Baja", color: "#86868b", bg: "rgba(134,134,139,0.16)" },
+  baja: { label: "Baja", color: "#34c759", bg: "rgba(52,199,89,0.14)" },
 };
 
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -179,9 +179,12 @@ export default function TaskList({
     void patchTask(task, { estado: task.estado === "done" ? "pending" : "done" });
   }
 
-  function cyclePrioridad(task: Task) {
-    const next = PRIORIDAD_ORDEN[(RANK[task.prioridad] + 1) % PRIORIDAD_ORDEN.length];
-    void patchTask(task, { prioridad: next });
+  function setPrioridad(task: Task, prioridad: Prioridad) {
+    void patchTask(task, { prioridad });
+  }
+
+  function toggleClave(task: Task) {
+    void patchTask(task, { es_clave: !task.es_clave });
   }
 
   function setDeadline(task: Task, value: string) {
@@ -346,6 +349,22 @@ export default function TaskList({
                             </span>
                           )}
 
+                          {/* Tarea clave: ⭐ siempre visible si está marcada; al hover si no. */}
+                          <button
+                            type="button"
+                            onClick={() => toggleClave(task)}
+                            aria-label={task.es_clave ? "Quitar de tareas clave" : "Marcar como tarea clave"}
+                            title="Tarea clave"
+                            className={[
+                              "shrink-0 text-sm leading-none transition-opacity duration-200 ease-out",
+                              task.es_clave
+                                ? "opacity-100"
+                                : "opacity-0 grayscale group-hover:opacity-60 hover:!opacity-100 hover:!grayscale-0",
+                            ].join(" ")}
+                          >
+                            ⭐
+                          </button>
+
                           {/* Deadline: ícono al hover; si hay fecha, se muestra "15 jun". */}
                           <div className="relative flex shrink-0 items-center justify-end">
                             <input
@@ -366,16 +385,20 @@ export default function TaskList({
                             )}
                           </div>
 
-                          {/* Badge de prioridad: click cicla alta → media → baja. */}
-                          <button
-                            type="button"
-                            onClick={() => cyclePrioridad(task)}
-                            title="Cambiar prioridad"
-                            className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium leading-none transition-colors duration-200 ease-out"
+                          {/* Prioridad: dropdown nativo, coloreado según el valor actual. */}
+                          <select
+                            value={task.prioridad}
+                            onChange={(e) => setPrioridad(task, e.target.value as Prioridad)}
+                            aria-label="Prioridad"
+                            className="shrink-0 cursor-pointer appearance-none rounded-full px-2 py-0.5 text-[11px] font-medium leading-none outline-none"
                             style={{ color: st.color, backgroundColor: st.bg }}
                           >
-                            {st.label}
-                          </button>
+                            {PRIORIDAD_ORDEN.map((p) => (
+                              <option key={p} value={p} className="bg-surface text-ink">
+                                {PRIORIDAD_STYLE[p].label}
+                              </option>
+                            ))}
+                          </select>
 
                           <button
                             type="button"

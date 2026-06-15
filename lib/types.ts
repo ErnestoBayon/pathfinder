@@ -26,6 +26,8 @@ export interface Task {
   estado: TaskState;
   prioridad: Prioridad;
   orden: number;
+  /** Tarea clave/bloqueante: se marca con ⭐ y siempre queda visible. */
+  es_clave: boolean;
   deadline?: string | null;
   created_at?: string;
 }

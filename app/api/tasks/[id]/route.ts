@@ -49,6 +49,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     patch.orden = orden;
   }
 
+  if (body?.es_clave !== undefined) {
+    if (typeof body.es_clave !== "boolean") {
+      return NextResponse.json({ error: "es_clave debe ser booleano" }, { status: 400 });
+    }
+    patch.es_clave = body.es_clave;
+  }
+
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
   }

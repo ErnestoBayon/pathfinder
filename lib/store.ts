@@ -3,7 +3,7 @@ import { createClient } from "./supabase/server";
 import { PRIORIDAD_ORDEN } from "./types";
 import type { ChatRole, Message, Prioridad, Project, Task, TaskState } from "./types";
 
-const TASK_COLS = "id, project_id, texto, estado, prioridad, orden, deadline, created_at";
+const TASK_COLS = "id, project_id, texto, estado, prioridad, orden, es_clave, deadline, created_at";
 const MESSAGE_COLS = "id, project_id, role, content, created_at";
 
 const RANK = Object.fromEntries(
@@ -107,6 +107,7 @@ export interface TaskPatch {
   prioridad?: Prioridad;
   deadline?: string | null;
   orden?: number;
+  es_clave?: boolean;
 }
 
 /** Aplica un patch parcial a una tarea y devuelve la tarea actualizada. */
