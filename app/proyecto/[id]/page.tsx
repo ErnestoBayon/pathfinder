@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProjectWorkspace from "../../components/ProjectWorkspace";
+import MiniCalendar from "../../components/MiniCalendar";
 import { getProject, listTasks, loadMessages } from "@/lib/store";
 
 // Lee el estado fresco de Supabase en cada request.
@@ -12,7 +13,7 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
 
   const tasks = await listTasks(params.id).catch(() => []);
   const messages = await loadMessages(params.id).catch(() => []);
-  const hasDeadline = tasks.some((t) => t.deadline);
+  const deadlineDates = tasks.filter((t) => t.deadline).map((t) => t.deadline!.slice(0, 10));
 
   return (
     <div className="min-h-screen">
@@ -38,13 +39,10 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
               {project.descripcion}
             </p>
           )}
-          {hasDeadline && (
-            <Link
-              href="/calendar"
-              className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-xs font-medium text-muted transition-colors duration-200 ease-out hover:bg-blue-50 hover:text-accent"
-            >
-              📅 Ver en calendario
-            </Link>
+          {deadlineDates.length > 0 && (
+            <div className="mt-5">
+              <MiniCalendar deadlineDates={deadlineDates} projectId={project.id} />
+            </div>
           )}
         </header>
 

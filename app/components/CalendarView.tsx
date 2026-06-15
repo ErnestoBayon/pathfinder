@@ -209,18 +209,18 @@ export default function CalendarView({
               <div
                 key={cell.str}
                 className={[
-                  "flex min-h-[100px] flex-col gap-1 rounded-lg border border-gray-100 p-1.5",
-                  isToday ? "bg-blue-50/60" : "bg-white",
+                  "flex min-h-[120px] flex-col gap-1 rounded-lg border border-gray-100 p-2",
+                  isToday ? "bg-red-50/40" : "bg-white",
                 ].join(" ")}
               >
                 {/* Número del día, arriba a la derecha */}
                 <div className="flex justify-end">
                   {isToday ? (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-sm font-semibold text-white">
                       {cell.date.getDate()}
                     </span>
                   ) : (
-                    <span className={["text-xs", cell.inMonth ? "text-gray-500" : "text-gray-300"].join(" ")}>
+                    <span className={["text-sm", cell.inMonth ? "text-gray-500" : "text-gray-300"].join(" ")}>
                       {cell.date.getDate()}
                     </span>
                   )}
