@@ -1,15 +1,33 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
-import { getProject, listTasks, loadMessages, saveMessage, updateTask } from "@/lib/store";
+import {
+  createTask,
+  getProject,
+  listTasks,
+  loadMessages,
+  saveMessage,
+  updateTask,
+  type TaskPatch,
+} from "@/lib/store";
 import { PRIORIDAD_ORDEN } from "@/lib/types";
-import type { Message, Prioridad, Task } from "@/lib/types";
+import type { Message, Prioridad, Task, TaskState } from "@/lib/types";
 
 export const runtime = "nodejs";
 
 const MODEL = "claude-sonnet-4-6";
+const MAX_TOKENS = 4096;
+const MAX_ROUNDS = 5;
 
 // Voz del PM (fuente de verdad: sección "Voz del PM" en DESIGN.md).
-const SYSTEM_PROMPT = `Responde siempre en texto plano. Sin asteriscos, sin ##, sin ---, sin tablas con |. Escribe como si fuera un mensaje de WhatsApp entre colegas.
+// Arriba, las instrucciones de uso de tools; abajo, la voz de siempre.
+const SYSTEM_PROMPT = `Tienes herramientas reales para gestionar tareas. Úsalas siempre:
+- Cuando el usuario mencione trabajo a realizar → create_task de inmediato
+- Antes de dar recomendaciones sobre el proyecto → get_tasks primero
+- Cuando cambies prioridad o fecha → update_task, no solo lo menciones
+- Puedes encadenar múltiples tools en una respuesta si es necesario
+- En tu respuesta final confirma brevemente qué acciones ejecutaste
+
+Responde siempre en texto plano. Sin asteriscos, sin ##, sin ---, sin tablas con |. Escribe como si fuera un mensaje de WhatsApp entre colegas.
 
 Eres el project manager (PM) personal de quien usa Pathfinder, un task manager
 ligero con IA para Data Scientists. Tu trabajo es acompañar, ordenar prioridades y mantener el ritmo.
@@ -22,15 +40,52 @@ Reglas de voz (tu respuesta las cumple SIEMPRE):
 - Concreto sobre abstracto: en vez de generalidades, di exactamente qué conviene hacer ahora.
 - Una sola pregunta por mensaje, máximo. Si no hace falta preguntar, no la fuerces.
 - Reconoce avances reales en una frase, sin inflar.
-- Español casual mexicano, tutea siempre.
-- Si te piden organizar, priorizar o ponerle fechas a las tareas, hazlo: confirma en una frase
-  natural qué reorganizaste (nunca menciones campos ni jerga). Los cambios de prioridad y fecha
-  se aplican solos en la lista; tú solo cuéntalo en lenguaje humano.
-- Si detectas que una tarea es bloqueante o clave para avanzar (otras dependen de ella), márcala
-  como clave: aparecerá con una estrella. Dilo en lenguaje natural, sin tecnicismos.`;
+- Español casual mexicano, tutea siempre.`;
 
-// Señales de que el usuario quiere reorganizar/priorizar/poner fechas/marcar tareas clave.
-const ORGANIZE_INTENT = /(organiz|prioriz|prioridad|urgent|orden(a|en|ar)|deadline|fecha|para cu[aá]ndo|vence|antes de|para (hoy|ma[ñn]ana|el )|clave|bloque|depende|esencial)/i;
+// Definición de las tools. Los esquemas hablan en inglés/neutral; executeTool()
+// traduce a las columnas reales de Supabase (texto, prioridad, estado…).
+const toolDefinitions: Anthropic.Tool[] = [
+  {
+    name: "create_task",
+    description:
+      "Crea una nueva tarea en el proyecto actual. Úsala cuando el usuario mencione trabajo concreto a realizar o cuando identifiques pasos accionables claros.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Título claro y accionable de la tarea" },
+        priority: {
+          type: "string",
+          enum: ["alta", "media", "baja"],
+          description: "Prioridad de la tarea",
+        },
+        deadline: { type: "string", description: "Fecha límite en formato YYYY-MM-DD" },
+      },
+      required: ["title"],
+    },
+  },
+  {
+    name: "update_task",
+    description:
+      "Actualiza campos de una tarea existente. Úsala para cambiar prioridad, deadline, título o estado. No describas el cambio en el chat sin ejecutar esta tool.",
+    input_schema: {
+      type: "object",
+      properties: {
+        task_id: { type: "string", description: "ID de la tarea a actualizar" },
+        title: { type: "string" },
+        priority: { type: "string", enum: ["alta", "media", "baja"] },
+        deadline: { type: "string", description: "Formato YYYY-MM-DD" },
+        status: { type: "string", enum: ["pending", "in_progress", "done"] },
+      },
+      required: ["task_id"],
+    },
+  },
+  {
+    name: "get_tasks",
+    description:
+      "Obtiene las tareas actuales del proyecto con id, título, prioridad, deadline y estado. Úsala antes de dar recomendaciones para tener contexto real.",
+    input_schema: { type: "object", properties: {}, required: [] },
+  },
+];
 
 // Bloque de contexto del proyecto que se inyecta al system prompt.
 // Las tareas van por su texto natural; ningún id ni nombre de campo sale de aquí.
@@ -46,123 +101,125 @@ Tareas:
 ${tareas}`;
 }
 
-// Segunda pasada: pide al modelo extraer las tareas accionables del mensaje del PM
-// como un JSON array de strings. Cualquier fallo (parse, formato) devuelve [].
-async function extractTasks(anthropic: Anthropic, reply: string): Promise<string[]> {
-  try {
-    const res = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 512,
-      messages: [
-        {
-          role: "user",
-          content: `Analiza este mensaje y extrae las tareas o pasos accionables como un JSON array de strings.
-Si no hay tareas concretas, responde solo con: []
-Responde ÚNICAMENTE con el JSON, sin texto extra, sin comillas adicionales.
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-Mensaje: ${reply}`,
-        },
-      ],
-    });
-    const raw = res.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("")
-      .trim();
-    // Por si el modelo envuelve la respuesta en un bloque ```json.
-    const cleaned = raw
-      .replace(/^```(?:json)?/i, "")
-      .replace(/```$/, "")
-      .trim();
-    const parsed: unknown = JSON.parse(cleaned);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
-      .map((t) => t.trim());
-  } catch {
-    return [];
+// Forma de la tarea que ven las tools (id incluido para que el modelo pueda
+// referenciarla en update_task). Traduce columnas españolas a un esquema neutral.
+function toToolTask(t: Task) {
+  return {
+    id: t.id,
+    title: t.texto,
+    priority: t.prioridad,
+    deadline: t.deadline ? t.deadline.slice(0, 10) : null,
+    status: t.estado,
+    es_clave: t.es_clave,
+  };
+}
+
+// Ejecuta una tool contra Supabase usando las funciones existentes de lib/store.ts.
+// Devuelve siempre un objeto serializable { success, ... } (nunca lanza).
+async function executeTool(
+  name: string,
+  input: unknown,
+  projectId: string,
+): Promise<unknown> {
+  const args = (input ?? {}) as Record<string, unknown>;
+  try {
+    if (!projectId) return { success: false, error: "No hay proyecto activo." };
+
+    if (name === "get_tasks") {
+      const tasks = await listTasks(projectId);
+      return { success: true, tasks: tasks.map(toToolTask) };
+    }
+
+    if (name === "create_task") {
+      const title = typeof args.title === "string" ? args.title.trim() : "";
+      if (!title) return { success: false, error: "title es requerido" };
+      const prioridad = PRIORIDAD_ORDEN.includes(args.priority as Prioridad)
+        ? (args.priority as Prioridad)
+        : "media";
+      const deadline =
+        typeof args.deadline === "string" && DATE_RE.test(args.deadline) ? args.deadline : null;
+      const task = await createTask(projectId, title, { prioridad, deadline });
+      return { success: true, task: toToolTask(task) };
+    }
+
+    if (name === "update_task") {
+      const taskId = typeof args.task_id === "string" ? args.task_id : "";
+      if (!taskId) return { success: false, error: "task_id es requerido" };
+      const patch: TaskPatch = {};
+      if (typeof args.title === "string" && args.title.trim()) patch.texto = args.title.trim();
+      if (PRIORIDAD_ORDEN.includes(args.priority as Prioridad)) {
+        patch.prioridad = args.priority as Prioridad;
+      }
+      if (typeof args.deadline === "string") {
+        patch.deadline = DATE_RE.test(args.deadline) ? args.deadline : null;
+      }
+      // El esquema permite "in_progress", pero la DB solo tiene pending/done.
+      if (typeof args.status === "string") {
+        patch.estado = (args.status === "done" ? "done" : "pending") as TaskState;
+      }
+      if (Object.keys(patch).length === 0) return { success: false, error: "Nada que actualizar." };
+      const task = await updateTask(taskId, patch);
+      return { success: true, task: toToolTask(task) };
+    }
+
+    return { success: false, error: `Tool desconocida: ${name}` };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : "error desconocido" };
   }
 }
 
-// Pasada de organización: dado el mensaje del usuario y las tareas actuales, pide al
-// modelo un JSON con la prioridad/deadline que debe tener cada tarea a cambiar, y aplica
-// los cambios directamente en Supabase. Devuelve cuántas tareas actualizó.
-async function organizeTasks(
+// Loop agéntico: una sola conversación con tool use. Mientras el modelo pida tools,
+// las ejecutamos y le devolvemos los resultados; cuando cierra el turno, devolvemos su texto.
+async function runAgenticLoop(
   anthropic: Anthropic,
-  userMessage: string,
-  tasks: Task[],
-): Promise<number> {
-  if (!tasks.length) return 0;
-  const today = new Date().toISOString().slice(0, 10);
-  const lista = tasks
-    .map(
-      (t) =>
-        `- "${t.texto}" (prioridad ${t.prioridad}, ${t.deadline ? t.deadline.slice(0, 10) : "sin fecha"}, clave: ${t.es_clave ? "sí" : "no"})`,
-    )
-    .join("\n");
+  system: string,
+  messages: Anthropic.MessageParam[],
+  projectId: string,
+): Promise<{ reply: string; toolsUsed: boolean }> {
+  let currentMessages: Anthropic.MessageParam[] = [...messages];
+  let toolsUsed = false;
 
-  try {
-    const res = await anthropic.messages.create({
+  for (let round = 0; round < MAX_ROUNDS; round++) {
+    const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 700,
-      messages: [
-        {
-          role: "user",
-          content: `El usuario quiere organizar sus tareas. Su mensaje: "${userMessage}".
-Hoy es ${today}.
-
-Tareas actuales:
-${lista}
-
-Devuelve ÚNICAMENTE un JSON array con las tareas que deban cambiar de prioridad, fecha o marcado de clave.
-Cada elemento: {"texto": "<el texto EXACTO de la tarea, tal cual aparece arriba>", "prioridad": "alta|media|baja", "deadline": "YYYY-MM-DD", "es_clave": true|false}
-Reglas: incluye un campo solo si cambia; usa "deadline": null para quitar una fecha; marca "es_clave": true si la tarea es bloqueante o clave para avanzar (otras dependen de ella); omite las tareas que no cambian; si nada cambia responde []. No inventes tareas nuevas. Sin texto extra.`,
-        },
-      ],
+      max_tokens: MAX_TOKENS,
+      system,
+      tools: toolDefinitions,
+      messages: currentMessages,
     });
-    const raw = res.content
+
+    if (response.stop_reason === "tool_use") {
+      toolsUsed = true;
+      const toolUseBlocks = response.content.filter(
+        (b): b is Anthropic.ToolUseBlock => b.type === "tool_use",
+      );
+      const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
+        toolUseBlocks.map(async (block) => ({
+          type: "tool_result" as const,
+          tool_use_id: block.id,
+          content: JSON.stringify(await executeTool(block.name, block.input, projectId)),
+        })),
+      );
+      currentMessages = [
+        ...currentMessages,
+        { role: "assistant", content: response.content },
+        { role: "user", content: toolResults },
+      ];
+      continue;
+    }
+
+    // end_turn (o cualquier cierre que no sea tool_use): devolvemos el texto.
+    const text = response.content
       .filter((b): b is Anthropic.TextBlock => b.type === "text")
       .map((b) => b.text)
-      .join("")
+      .join("\n")
       .trim();
-    const cleaned = raw.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-    const parsed: unknown = JSON.parse(cleaned);
-    if (!Array.isArray(parsed)) return 0;
-
-    // Mapa de texto normalizado → tarea, para resolver el id sin exponerlo al modelo.
-    const byText = new Map(tasks.map((t) => [t.texto.trim().toLowerCase(), t]));
-
-    let applied = 0;
-    for (const item of parsed) {
-      if (typeof item !== "object" || item === null) continue;
-      const rec = item as Record<string, unknown>;
-      const texto = typeof rec.texto === "string" ? rec.texto.trim().toLowerCase() : "";
-      const task = byText.get(texto);
-      if (!task) continue;
-
-      const patch: { prioridad?: Prioridad; deadline?: string | null; es_clave?: boolean } = {};
-      if (typeof rec.prioridad === "string" && PRIORIDAD_ORDEN.includes(rec.prioridad as Prioridad)) {
-        patch.prioridad = rec.prioridad as Prioridad;
-      }
-      if ("deadline" in rec) {
-        const dl = rec.deadline;
-        if (dl === null) patch.deadline = null;
-        else if (typeof dl === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dl)) patch.deadline = dl;
-      }
-      if (typeof rec.es_clave === "boolean") patch.es_clave = rec.es_clave;
-      if (Object.keys(patch).length === 0) continue;
-
-      try {
-        await updateTask(task.id, patch);
-        applied++;
-      } catch {
-        // Si una falla, seguimos con las demás.
-      }
-    }
-    return applied;
-  } catch {
-    return 0;
+    return { reply: text || "Listo.", toolsUsed };
   }
+
+  return { reply: "No pude completar la acción. Intenta de nuevo.", toolsUsed };
 }
 
 export async function POST(req: Request) {
@@ -183,16 +240,14 @@ export async function POST(req: Request) {
 
   // Carga proyecto, tareas e historial persistido para darle contexto al PM.
   // El historial es la fuente de verdad de Supabase, no estado del cliente.
-  let system = SYSTEM_PROMPT;
+  let system = SYSTEM_PROMPT + `\n\nHoy es ${new Date().toISOString().slice(0, 10)}.`;
   let priorTurns: Anthropic.MessageParam[] = [];
-  let projectTasks: Task[] = [];
   if (projectId) {
     const [project, tasks, prior] = await Promise.all([
       getProject(projectId).catch(() => null),
       listTasks(projectId).catch(() => [] as Task[]),
       loadMessages(projectId).catch(() => [] as Message[]),
     ]);
-    projectTasks = tasks;
     if (project) {
       system += buildContext(project.nombre, project.descripcion, tasks);
     }
@@ -208,28 +263,16 @@ export async function POST(req: Request) {
   const anthropic = new Anthropic({ apiKey });
 
   try {
-    const response = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 1024,
+    const { reply, toolsUsed } = await runAgenticLoop(
+      anthropic,
       system,
-      messages: [...priorTurns, { role: "user", content: message }],
-    });
-    const reply = response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
+      [...priorTurns, { role: "user", content: message }],
+      projectId,
+    );
     if (projectId && reply) {
       await saveMessage(projectId, "assistant", reply).catch(() => {});
     }
-    // Cuando el usuario pide organizar/priorizar, aplicamos prioridades y fechas a las
-    // tareas existentes. `organized` > 0 le dice al cliente que refresque la lista.
-    const organized =
-      ORGANIZE_INTENT.test(message) && projectTasks.length
-        ? await organizeTasks(anthropic, message, projectTasks)
-        : 0;
-    const suggestedTasks = reply ? await extractTasks(anthropic, reply) : [];
-    return NextResponse.json({ reply, suggestedTasks, organized });
+    return NextResponse.json({ reply, toolsUsed });
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";
     return NextResponse.json({ error: `No pude hablar con Claude: ${detail}` }, { status: 502 });
