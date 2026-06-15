@@ -54,6 +54,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
         }
       } else {
         const { data, error } = await supabase.auth.signUp({ email: correo, password });
+        // Solo es error real si Supabase devuelve `error`.
         if (error) {
           setError(
             error.message.toLowerCase().includes("already")
@@ -62,11 +63,13 @@ export default function AuthForm({ mode }: { mode: Mode }) {
           );
           return;
         }
-        // Si el proyecto exige confirmación por correo, aún no hay sesión.
-        if (!data.session) {
-          setNotice("Te enviamos un correo para confirmar tu cuenta. Revísalo para entrar.");
+        // Email confirmation activo: hay usuario creado pero todavía no sesión.
+        // No es error: hay que confirmar el correo antes de entrar.
+        if (data.user && !data.session) {
+          setNotice("Revisa tu correo para confirmar tu cuenta.");
           return;
         }
+        // Si hay sesión, cae al redirect a /home de abajo.
       }
       router.push("/home");
       router.refresh();
