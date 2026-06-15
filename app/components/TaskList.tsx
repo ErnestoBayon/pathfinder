@@ -275,6 +275,140 @@ export default function TaskList({
   const pendientes = tasks.filter((t) => t.estado !== "done").length;
   const ordered = sortForDisplay(tasks);
 
+  function renderTask(task: Task) {
+    const done = task.estado === "done";
+    const editing = editingId === task.id;
+    const st = PRIORIDAD_STYLE[task.prioridad];
+    return (
+      <Sortable key={task.id} id={task.id}>
+        {({ setNodeRef, setActivatorNodeRef, attributes, listeners, style, isDragging }) => (
+          <li ref={setNodeRef} style={style} className={isDragging ? "relative z-10 opacity-70" : ""}>
+            <div className="group flex items-center gap-1.5 rounded-lg px-1 py-2 transition-colors duration-200 ease-out hover:bg-canvas">
+              <span
+                ref={setActivatorNodeRef}
+                {...attributes}
+                {...listeners}
+                aria-label="Reordenar tarea"
+                className="shrink-0 cursor-grab touch-none select-none px-0.5 text-sm leading-none text-muted opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 active:cursor-grabbing"
+              >
+                ⠿
+              </span>
+
+              <button
+                type="button"
+                onClick={() => toggle(task)}
+                aria-label={done ? "Marcar como pendiente" : "Marcar como hecha"}
+                className={[
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs leading-none transition-colors duration-200 ease-out",
+                  done ? "border-done bg-done text-white" : "border-line text-transparent hover:border-accent",
+                ].join(" ")}
+              >
+                ✓
+              </button>
+
+              {editing ? (
+                <input
+                  autoFocus
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      commitEdit(task);
+                    } else if (e.key === "Escape") {
+                      e.preventDefault();
+                      skipBlur.current = true;
+                      cancelEdit();
+                    }
+                  }}
+                  onBlur={() => {
+                    if (skipBlur.current) {
+                      skipBlur.current = false;
+                      return;
+                    }
+                    commitEdit(task);
+                  }}
+                  className="min-w-0 flex-1 rounded-md border border-accent bg-surface px-2 py-0.5 text-sm leading-relaxed text-ink outline-none"
+                />
+              ) : (
+                <span
+                  onClick={() => startEdit(task)}
+                  className={[
+                    "min-w-0 flex-1 cursor-text truncate text-sm leading-relaxed",
+                    done ? "text-muted line-through" : "text-ink",
+                  ].join(" ")}
+                >
+                  {task.texto}
+                </span>
+              )}
+
+              {/* Tarea clave: ⭐ morada, siempre visible si está marcada; al hover (atenuada) si no. */}
+              <button
+                type="button"
+                onClick={() => toggleClave(task)}
+                aria-label={task.es_clave ? "Quitar de tareas clave" : "Marcar como tarea clave"}
+                title="Tarea clave"
+                style={{ color: STAR_COLOR }}
+                className={[
+                  "flex shrink-0 items-center leading-none transition-opacity duration-200 ease-out",
+                  task.es_clave
+                    ? "opacity-100"
+                    : "opacity-0 group-hover:opacity-50 hover:!opacity-100",
+                ].join(" ")}
+              >
+                <StarIcon />
+              </button>
+
+              {/* Deadline: ícono al hover; si hay fecha, se muestra "15 jun". */}
+              <div className="relative flex shrink-0 items-center justify-end">
+                <input
+                  type="date"
+                  value={task.deadline ? task.deadline.slice(0, 10) : ""}
+                  onChange={(e) => setDeadline(task, e.target.value)}
+                  aria-label="Fecha límite"
+                  className="absolute inset-0 z-10 w-full cursor-pointer opacity-0"
+                />
+                {task.deadline ? (
+                  <span className="pointer-events-none whitespace-nowrap text-xs text-muted">
+                    {formatDeadline(task.deadline)}
+                  </span>
+                ) : (
+                  <span className="pointer-events-none text-muted opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
+                    <CalendarIcon />
+                  </span>
+                )}
+              </div>
+
+              {/* Prioridad: dropdown nativo, coloreado según el valor actual. */}
+              <select
+                value={task.prioridad}
+                onChange={(e) => setPrioridad(task, e.target.value as Prioridad)}
+                aria-label="Prioridad"
+                className="shrink-0 cursor-pointer appearance-none rounded-full px-2 py-0.5 text-[11px] font-medium leading-none outline-none"
+                style={{ color: st.color, backgroundColor: st.bg }}
+              >
+                {PRIORIDAD_ORDEN.map((p) => (
+                  <option key={p} value={p} className="bg-surface text-ink">
+                    {PRIORIDAD_STYLE[p].label}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={() => void remove(task)}
+                aria-label="Eliminar tarea"
+                className="shrink-0 rounded-md px-1 text-base leading-none text-muted opacity-0 transition-opacity duration-200 ease-out hover:text-ink group-hover:opacity-100"
+              >
+                ×
+              </button>
+            </div>
+          </li>
+        )}
+      </Sortable>
+    );
+  }
+
   return (
     <div className="flex flex-col p-6">
       <div className="mb-4 flex items-baseline justify-between">
@@ -290,143 +424,23 @@ export default function TaskList({
         </p>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={ordered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-            <ul className="mb-4 flex flex-col gap-1.5">
-              {ordered.map((task) => {
-                const done = task.estado === "done";
-                const editing = editingId === task.id;
-                const st = PRIORIDAD_STYLE[task.prioridad];
-                return (
-                  <Sortable key={task.id} id={task.id}>
-                    {({ setNodeRef, setActivatorNodeRef, attributes, listeners, style, isDragging }) => (
-                      <li ref={setNodeRef} style={style} className={isDragging ? "relative z-10 opacity-70" : ""}>
-                        <div className="group flex items-center gap-1.5 rounded-lg px-1 py-2 transition-colors duration-200 ease-out hover:bg-canvas">
-                          <span
-                            ref={setActivatorNodeRef}
-                            {...attributes}
-                            {...listeners}
-                            aria-label="Reordenar tarea"
-                            className="shrink-0 cursor-grab touch-none select-none px-0.5 text-sm leading-none text-muted opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 active:cursor-grabbing"
-                          >
-                            ⠿
-                          </span>
-
-                          <button
-                            type="button"
-                            onClick={() => toggle(task)}
-                            aria-label={done ? "Marcar como pendiente" : "Marcar como hecha"}
-                            className={[
-                              "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs leading-none transition-colors duration-200 ease-out",
-                              done ? "border-done bg-done text-white" : "border-line text-transparent hover:border-accent",
-                            ].join(" ")}
-                          >
-                            ✓
-                          </button>
-
-                          {editing ? (
-                            <input
-                              autoFocus
-                              value={editText}
-                              onChange={(e) => setEditText(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  e.preventDefault();
-                                  commitEdit(task);
-                                } else if (e.key === "Escape") {
-                                  e.preventDefault();
-                                  skipBlur.current = true;
-                                  cancelEdit();
-                                }
-                              }}
-                              onBlur={() => {
-                                if (skipBlur.current) {
-                                  skipBlur.current = false;
-                                  return;
-                                }
-                                commitEdit(task);
-                              }}
-                              className="min-w-0 flex-1 rounded-md border border-accent bg-surface px-2 py-0.5 text-sm leading-relaxed text-ink outline-none"
-                            />
-                          ) : (
-                            <span
-                              onClick={() => startEdit(task)}
-                              className={[
-                                "min-w-0 flex-1 cursor-text truncate text-sm leading-relaxed",
-                                done ? "text-muted line-through" : "text-ink",
-                              ].join(" ")}
-                            >
-                              {task.texto}
-                            </span>
-                          )}
-
-                          {/* Tarea clave: ⭐ morada, siempre visible si está marcada; al hover (atenuada) si no. */}
-                          <button
-                            type="button"
-                            onClick={() => toggleClave(task)}
-                            aria-label={task.es_clave ? "Quitar de tareas clave" : "Marcar como tarea clave"}
-                            title="Tarea clave"
-                            style={{ color: STAR_COLOR }}
-                            className={[
-                              "flex shrink-0 items-center leading-none transition-opacity duration-200 ease-out",
-                              task.es_clave
-                                ? "opacity-100"
-                                : "opacity-0 group-hover:opacity-50 hover:!opacity-100",
-                            ].join(" ")}
-                          >
-                            <StarIcon />
-                          </button>
-
-                          {/* Deadline: ícono al hover; si hay fecha, se muestra "15 jun". */}
-                          <div className="relative flex shrink-0 items-center justify-end">
-                            <input
-                              type="date"
-                              value={task.deadline ? task.deadline.slice(0, 10) : ""}
-                              onChange={(e) => setDeadline(task, e.target.value)}
-                              aria-label="Fecha límite"
-                              className="absolute inset-0 z-10 w-full cursor-pointer opacity-0"
-                            />
-                            {task.deadline ? (
-                              <span className="pointer-events-none whitespace-nowrap text-xs text-muted">
-                                {formatDeadline(task.deadline)}
-                              </span>
-                            ) : (
-                              <span className="pointer-events-none text-muted opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
-                                <CalendarIcon />
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Prioridad: dropdown nativo, coloreado según el valor actual. */}
-                          <select
-                            value={task.prioridad}
-                            onChange={(e) => setPrioridad(task, e.target.value as Prioridad)}
-                            aria-label="Prioridad"
-                            className="shrink-0 cursor-pointer appearance-none rounded-full px-2 py-0.5 text-[11px] font-medium leading-none outline-none"
-                            style={{ color: st.color, backgroundColor: st.bg }}
-                          >
-                            {PRIORIDAD_ORDEN.map((p) => (
-                              <option key={p} value={p} className="bg-surface text-ink">
-                                {PRIORIDAD_STYLE[p].label}
-                              </option>
-                            ))}
-                          </select>
-
-                          <button
-                            type="button"
-                            onClick={() => void remove(task)}
-                            aria-label="Eliminar tarea"
-                            className="shrink-0 rounded-md px-1 text-base leading-none text-muted opacity-0 transition-opacity duration-200 ease-out hover:text-ink group-hover:opacity-100"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </li>
-                    )}
-                  </Sortable>
-                );
-              })}
-            </ul>
-          </SortableContext>
+          <ul className="mb-4 flex flex-col gap-1.5">
+            {/* Un SortableContext por prioridad: dnd-kit solo resuelve el `over`
+                dentro del mismo grupo, así el guard de prioridad nunca aborta un drop válido. */}
+            {PRIORIDAD_ORDEN.map((prioridad) => {
+              const group = ordered.filter((t) => t.prioridad === prioridad);
+              if (group.length === 0) return null;
+              return (
+                <SortableContext
+                  key={prioridad}
+                  items={group.map((t) => t.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {group.map((task) => renderTask(task))}
+                </SortableContext>
+              );
+            })}
+          </ul>
         </DndContext>
       )}
 
