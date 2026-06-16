@@ -78,13 +78,13 @@ export default function ChatBox({
   }
 
   return (
-    <div className="flex flex-col p-6">
+    <div className="flex h-full flex-col p-6">
       <div className="mb-4 flex items-center gap-3">
         <AgentAvatar color="#4F46E5" state={sending ? "thinking" : "active"} size={40} />
         <h2 className="text-sm font-semibold text-ink">Tu PM</h2>
       </div>
 
-      <div ref={scrollRef} className="no-scrollbar mb-4 flex max-h-72 flex-col gap-2.5 overflow-y-auto">
+      <div ref={scrollRef} className="no-scrollbar mb-4 flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto">
         {messages.length === 0 ? (
           <p className="text-sm text-muted">
             Cuéntame en qué andas o pídeme orden con tus tareas. Aquí ando.
@@ -94,7 +94,7 @@ export default function ChatBox({
             <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
               <span
                 className={[
-                  "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                  "max-w-[92%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
                   m.role === "user" ? "bg-accent text-white" : "bg-canvas text-ink",
                 ].join(" ")}
               >
