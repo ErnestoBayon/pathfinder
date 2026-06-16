@@ -94,7 +94,7 @@ export default function ChatBox({
             <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
               <span
                 className={[
-                  "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                  "max-w-[92%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
                   m.role === "user" ? "bg-accent text-white" : "bg-canvas text-ink",
                 ].join(" ")}
               >

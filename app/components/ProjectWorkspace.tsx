@@ -22,7 +22,7 @@ export default function ProjectWorkspace({
   const [taskVersion, setTaskVersion] = useState(0);
 
   return (
-    <div className="mt-10 grid grid-cols-1 items-start gap-6 lg:grid-cols-[3fr_2fr]">
+    <div className="mt-10 grid grid-cols-1 items-start gap-6 lg:grid-cols-[3fr_3fr]">
       {/* Columna izquierda — tareas */}
       <section className="rounded-2xl border border-line bg-surface shadow-note">
         <TaskList projectId={projectId} initialTasks={initialTasks} taskVersion={taskVersion} />
@@ -32,7 +32,7 @@ export default function ProjectWorkspace({
       {/* Aquí se pueden agregar: progress bar, métricas, actividad */}
       <div className="flex flex-col gap-4">
         {calendar}
-        <section className="flex min-h-[400px] flex-col rounded-2xl border border-line bg-surface shadow-note">
+        <section className="flex h-[420px] flex-col rounded-2xl border border-line bg-surface shadow-note">
           <ChatBox
             projectId={projectId}
             initialMessages={initialMessages}
