@@ -36,9 +36,9 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
             {project.nombre}
           </h1>
           {project.descripcion && (
-            <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted">
+            <div className="mt-2 max-h-28 max-w-2xl overflow-y-auto rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm leading-relaxed text-gray-500">
               {project.descripcion}
-            </p>
+            </div>
           )}
         </header>
 
@@ -46,11 +46,7 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
           projectId={project.id}
           initialTasks={tasks}
           initialMessages={messages}
-          calendar={
-            deadlineDates.length > 0 ? (
-              <MiniCalendar deadlineDates={deadlineDates} projectId={project.id} />
-            ) : null
-          }
+          calendar={<MiniCalendar deadlineDates={deadlineDates} projectId={project.id} />}
         />
       </main>
     </div>

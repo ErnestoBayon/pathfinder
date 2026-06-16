@@ -283,7 +283,7 @@ export default function TaskList({
       <Sortable key={task.id} id={task.id}>
         {({ setNodeRef, setActivatorNodeRef, attributes, listeners, style, isDragging }) => (
           <li ref={setNodeRef} style={style} className={isDragging ? "relative z-10 opacity-70" : ""}>
-            <div className="group flex items-center gap-1.5 rounded-lg px-1 py-2 transition-colors duration-200 ease-out hover:bg-canvas">
+            <div className="group flex h-auto items-start gap-1.5 rounded-lg px-1 py-2 transition-colors duration-200 ease-out hover:bg-canvas">
               <span
                 ref={setActivatorNodeRef}
                 {...attributes}
@@ -334,7 +334,7 @@ export default function TaskList({
                 <span
                   onClick={() => startEdit(task)}
                   className={[
-                    "min-w-0 flex-1 cursor-text truncate text-sm leading-relaxed",
+                    "min-w-0 flex-1 cursor-text whitespace-normal break-words text-sm leading-snug",
                     done ? "text-muted line-through" : "text-ink",
                   ].join(" ")}
                 >
