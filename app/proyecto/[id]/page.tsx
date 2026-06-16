@@ -19,7 +19,7 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
     <div className="min-h-screen">
       {/* Navbar simple */}
       <nav className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-4xl items-center px-6 py-4">
+        <div className="mx-auto flex max-w-5xl items-center px-6 py-4">
           <Link
             href="/home"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors duration-200 ease-out hover:text-ink"
@@ -29,7 +29,8 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
         </div>
       </nav>
 
-      <main className="mx-auto max-w-4xl px-6 py-10 sm:py-12">
+      <main className="mx-auto max-w-5xl px-6 py-10 sm:py-12">
+        {/* Título y descripción: full width, arriba del grid. */}
         <header>
           <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
             {project.nombre}
@@ -39,17 +40,17 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
               {project.descripcion}
             </p>
           )}
-          {deadlineDates.length > 0 && (
-            <div className="mt-5">
-              <MiniCalendar deadlineDates={deadlineDates} projectId={project.id} />
-            </div>
-          )}
         </header>
 
         <ProjectWorkspace
           projectId={project.id}
           initialTasks={tasks}
           initialMessages={messages}
+          calendar={
+            deadlineDates.length > 0 ? (
+              <MiniCalendar deadlineDates={deadlineDates} projectId={project.id} />
+            ) : null
+          }
         />
       </main>
     </div>

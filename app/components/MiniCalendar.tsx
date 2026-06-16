@@ -2,12 +2,8 @@ import Link from "next/link";
 
 // Widget de calendario estilo iOS: mes actual, hoy en círculo rojo, días con deadline
 // marcados con un punto rojo. Todo el widget enlaza a /calendar. Server component.
-const MESES_EN = [
-  "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
-  "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
-];
-// Semana inicia domingo (estilo iOS).
-const DIAS = ["S", "L", "M", "X", "J", "V", "S"];
+// Semana inicia lunes (igual que el calendario principal).
+const DIAS = ["L", "M", "X", "J", "V", "S", "D"];
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -29,8 +25,10 @@ export default function MiniCalendar({
   const todayStr = ymd(today);
   const deadlineSet = new Set(deadlineDates);
 
+  const monthLabel = today.toLocaleString("es-ES", { month: "long" }).toUpperCase();
+
   const first = new Date(year, month, 1);
-  const lead = first.getDay(); // 0 = domingo
+  const lead = (first.getDay() + 6) % 7; // 0 = lunes
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const total = Math.ceil((lead + daysInMonth) / 7) * 7;
   const cells = Array.from({ length: total }, (_, i) => {
@@ -46,7 +44,7 @@ export default function MiniCalendar({
       className="block w-56 cursor-pointer rounded-2xl bg-white p-3 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md"
     >
       <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-red-500">
-        {MESES_EN[month]}
+        {monthLabel}
       </div>
 
       {/* Días de la semana */}
