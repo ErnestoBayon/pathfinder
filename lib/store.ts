@@ -1,10 +1,11 @@
 import { supabase } from "./supabase";
 import { createClient } from "./supabase/server";
 import { PRIORIDAD_ORDEN } from "./types";
-import type { ChatRole, Message, Prioridad, Project, Task, TaskState } from "./types";
+import type { ChatRole, Message, Prioridad, Project, Subtask, Task, TaskState } from "./types";
 
 const TASK_COLS = "id, project_id, texto, estado, prioridad, orden, es_clave, deadline, created_at";
 const MESSAGE_COLS = "id, project_id, role, content, created_at";
+const SUBTASK_COLS = "id, task_id, title, completed, position, created_at";
 
 const RANK = Object.fromEntries(
   PRIORIDAD_ORDEN.map((p, i) => [p, i]),
@@ -125,6 +126,61 @@ export async function updateTask(id: string, patch: TaskPatch): Promise<Task> {
 /** Elimina una tarea por id. */
 export async function deleteTask(id: string): Promise<void> {
   const { error } = await supabase.from("tasks").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+/** Lista las subtareas de una tarea, ordenadas por `position` ascendente. */
+export async function listSubtasks(taskId: string): Promise<Subtask[]> {
+  const { data, error } = await supabase
+    .from("subtasks")
+    .select(SUBTASK_COLS)
+    .eq("task_id", taskId)
+    .order("position", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Subtask[];
+}
+
+/**
+ * Crea una subtarea al final de la lista. La `position` es el conteo de subtareas
+ * existentes para esa tarea (0-based). El id (uuid) y created_at los pone la base.
+ */
+export async function createSubtask(taskId: string, title: string): Promise<Subtask> {
+  const { count, error: countError } = await supabase
+    .from("subtasks")
+    .select("id", { count: "exact", head: true })
+    .eq("task_id", taskId);
+  if (countError) throw new Error(countError.message);
+
+  const { data, error } = await supabase
+    .from("subtasks")
+    .insert({ task_id: taskId, title, completed: false, position: count ?? 0 })
+    .select(SUBTASK_COLS)
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Subtask;
+}
+
+/** Campos editables de una subtarea. Solo se actualiza lo que venga. */
+export interface SubtaskPatch {
+  title?: string;
+  completed?: boolean;
+}
+
+/** Aplica un patch parcial a una subtarea y devuelve la subtarea actualizada. */
+export async function updateSubtask(id: string, patch: SubtaskPatch): Promise<Subtask> {
+  const { data, error } = await supabase
+    .from("subtasks")
+    .update(patch)
+    .eq("id", id)
+    .select(SUBTASK_COLS)
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Subtask;
+}
+
+/** Elimina una subtarea por id. */
+export async function deleteSubtask(id: string): Promise<void> {
+  const { error } = await supabase.from("subtasks").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
 
