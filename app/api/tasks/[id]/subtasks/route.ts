@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { createSubtask, listSubtasks } from "@/lib/store";
+import { getAuthUser, validateProjectOwnership, projectIdForTask } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 // GET /api/tasks/[id]/subtasks — lista las subtareas de una tarea, ordenadas por position.
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const projectId = await projectIdForTask(params.id);
+  const isOwner = projectId !== null && (await validateProjectOwnership(projectId, user.id));
+  if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   try {
     const subtasks = await listSubtasks(params.id);
     return NextResponse.json({ subtasks });
@@ -19,6 +26,12 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
 // POST /api/tasks/[id]/subtasks — crea una subtarea al final de la lista.
 export async function POST(req: Request, { params }: { params: { id: string } }) {
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const projectId = await projectIdForTask(params.id);
+  const isOwner = projectId !== null && (await validateProjectOwnership(projectId, user.id));
+  if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const body = await req.json().catch(() => ({}));
   const title = (body?.title ?? "").toString().trim();
 

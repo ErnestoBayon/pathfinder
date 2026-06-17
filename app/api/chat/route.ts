@@ -13,6 +13,7 @@ import {
 } from "@/lib/store";
 import { PRIORIDAD_ORDEN } from "@/lib/types";
 import type { Message, Prioridad, Task, TaskState } from "@/lib/types";
+import { getAuthUser, validateProjectOwnership } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -288,6 +289,9 @@ async function runAgenticLoop(
 }
 
 export async function POST(req: Request) {
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
@@ -301,6 +305,13 @@ export async function POST(req: Request) {
   const projectId: string = (body?.projectId ?? "").toString();
   if (!message) {
     return NextResponse.json({ error: "message requerido" }, { status: 400 });
+  }
+
+  // Si el chat apunta a un proyecto, debe ser del usuario. (Sin projectId, el PM
+  // responde sin contexto de proyecto y no toca datos de nadie.)
+  if (projectId) {
+    const isOwner = await validateProjectOwnership(projectId, user.id);
+    if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Carga proyecto, tareas e historial persistido para darle contexto al PM.
