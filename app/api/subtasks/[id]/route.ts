@@ -1,10 +1,36 @@
 import { NextResponse } from "next/server";
 import { deleteSubtask, updateSubtask, type SubtaskPatch } from "@/lib/store";
+import { getAuthUser, validateProjectOwnership } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
+// Resuelve el project_id dueño de una subtarea: subtask → task_id → project_id
+// (service-role, sin RLS). null si la subtarea o su tarea no existen.
+async function projectIdForSubtask(subtaskId: string): Promise<string | null> {
+  const { data: sub } = await supabase
+    .from("subtasks")
+    .select("task_id")
+    .eq("id", subtaskId)
+    .maybeSingle();
+  const taskId = (sub as { task_id: string } | null)?.task_id;
+  if (!taskId) return null;
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("project_id")
+    .eq("id", taskId)
+    .maybeSingle();
+  return (task as { project_id: string } | null)?.project_id ?? null;
+}
+
 // PATCH /api/subtasks/[id] — actualiza los campos que vengan en el body (completed, title).
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const projectId = await projectIdForSubtask(params.id);
+  const isOwner = projectId !== null && (await validateProjectOwnership(projectId, user.id));
+  if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const body = await req.json().catch(() => ({}));
   const patch: SubtaskPatch = {};
 
@@ -40,7 +66,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 // DELETE /api/subtasks/[id] — elimina la subtarea, sin confirmación.
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const projectId = await projectIdForSubtask(params.id);
+  const isOwner = projectId !== null && (await validateProjectOwnership(projectId, user.id));
+  if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   try {
     await deleteSubtask(params.id);
     return NextResponse.json({ success: true });

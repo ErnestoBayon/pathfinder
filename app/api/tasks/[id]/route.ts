@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
 import { deleteTask, updateTask, type TaskPatch } from "@/lib/store";
 import { PRIORIDAD_ORDEN } from "@/lib/types";
+import { getAuthUser, validateProjectOwnership, projectIdForTask } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 // PATCH /api/tasks/[id] — actualiza los campos que vengan en el body
 // (estado, texto, prioridad, deadline u orden). Valida cada campo presente.
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const projectId = await projectIdForTask(params.id);
+  const isOwner = projectId !== null && (await validateProjectOwnership(projectId, user.id));
+  if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const body = await req.json().catch(() => ({}));
   const patch: TaskPatch = {};
 
@@ -73,7 +80,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 // DELETE /api/tasks/[id] — elimina la tarea, sin confirmación.
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const projectId = await projectIdForTask(params.id);
+  const isOwner = projectId !== null && (await validateProjectOwnership(projectId, user.id));
+  if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   try {
     await deleteTask(params.id);
     return NextResponse.json({ ok: true });
