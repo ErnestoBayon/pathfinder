@@ -18,7 +18,7 @@ export const runtime = "nodejs";
 
 const MODEL = "claude-sonnet-4-6";
 const MAX_TOKENS = 4096;
-const MAX_ROUNDS = 5;
+const MAX_ROUNDS = 15;
 
 // Voz del PM (fuente de verdad: sección "Voz del PM" en DESIGN.md).
 // Arriba, las instrucciones de uso de tools; abajo, la voz de siempre.
@@ -279,7 +279,12 @@ async function runAgenticLoop(
     return { reply: text || "Listo.", toolsUsed };
   }
 
-  return { reply: "No pude completar la acción. Intenta de nuevo.", toolsUsed };
+  // Se agotaron las rondas: muchas tools ya pudieron ejecutarse (las acciones
+  // persistieron). En vez de un error genérico, lo decimos sin alarmar.
+  return {
+    reply: "Hice lo que pude en este turno. Puedes pedirme continuar si falta algo.",
+    toolsUsed,
+  };
 }
 
 export async function POST(req: Request) {
