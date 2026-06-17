@@ -1,8 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import {
+  createSubtask,
   createTask,
   getProject,
+  listSubtasks,
   listTasks,
   loadMessages,
   saveMessage,
@@ -26,6 +28,7 @@ const SYSTEM_PROMPT = `Tienes herramientas reales para gestionar tareas. Úsalas
 - Cuando cambies prioridad o fecha → update_task, no solo lo menciones
 - Puedes encadenar múltiples tools en una respuesta si es necesario
 - En tu respuesta final confirma brevemente qué acciones ejecutaste
+- Cuando el usuario cree una tarea que parezca compleja o multifase, sugiere proactivamente dividirla en subtareas. Usa list_subtasks antes de hablar sobre los pasos de una tarea. Usa create_subtask cuando el usuario quiera desglosar el trabajo en pasos concretos.
 
 Responde siempre en texto plano. Sin asteriscos, sin ##, sin ---, sin tablas con |. Escribe como si fuera un mensaje de WhatsApp entre colegas.
 
@@ -84,6 +87,31 @@ const toolDefinitions: Anthropic.Tool[] = [
     description:
       "Obtiene las tareas actuales del proyecto con id, título, prioridad, deadline y estado. Úsala antes de dar recomendaciones para tener contexto real.",
     input_schema: { type: "object", properties: {}, required: [] },
+  },
+  {
+    name: "list_subtasks",
+    description:
+      "Lista las subtareas (pasos) de una tarea existente, con su título y si están completadas. Úsala antes de hablar sobre los pasos o el avance de una tarea.",
+    input_schema: {
+      type: "object",
+      properties: {
+        task_id: { type: "string", description: "ID de la tarea cuyas subtareas quieres listar" },
+      },
+      required: ["task_id"],
+    },
+  },
+  {
+    name: "create_subtask",
+    description:
+      "Crea una subtarea (paso concreto) dentro de una tarea existente. Úsala cuando el usuario quiera desglosar el trabajo de una tarea en pasos.",
+    input_schema: {
+      type: "object",
+      properties: {
+        task_id: { type: "string", description: "ID de la tarea a la que pertenece la subtarea" },
+        title: { type: "string", description: "Título claro y accionable de la subtarea" },
+      },
+      required: ["task_id", "title"],
+    },
   },
 ];
 
@@ -162,6 +190,38 @@ async function executeTool(
       if (Object.keys(patch).length === 0) return { success: false, error: "Nada que actualizar." };
       const task = await updateTask(taskId, patch);
       return { success: true, task: toToolTask(task) };
+    }
+
+    if (name === "list_subtasks") {
+      const taskId = typeof args.task_id === "string" ? args.task_id : "";
+      if (!taskId) return { success: false, error: "task_id es requerido" };
+      const subtasks = await listSubtasks(taskId);
+      return {
+        success: true,
+        subtasks: subtasks.map((s) => ({
+          id: s.id,
+          task_id: s.task_id,
+          title: s.title,
+          completed: s.completed,
+        })),
+      };
+    }
+
+    if (name === "create_subtask") {
+      const taskId = typeof args.task_id === "string" ? args.task_id : "";
+      if (!taskId) return { success: false, error: "task_id es requerido" };
+      const title = typeof args.title === "string" ? args.title.trim() : "";
+      if (!title) return { success: false, error: "title es requerido" };
+      const subtask = await createSubtask(taskId, title);
+      return {
+        success: true,
+        subtask: {
+          id: subtask.id,
+          task_id: subtask.task_id,
+          title: subtask.title,
+          completed: subtask.completed,
+        },
+      };
     }
 
     return { success: false, error: `Tool desconocida: ${name}` };
