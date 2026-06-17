@@ -111,10 +111,12 @@ function Sortable({ id, children }: { id: string; children: (p: SortableRenderPr
 export default function TaskList({
   projectId,
   initialTasks,
+  initialSubtaskCounts,
   taskVersion = 0,
 }: {
   projectId: string;
   initialTasks: Task[];
+  initialSubtaskCounts?: Record<string, { total: number; done: number }>;
   taskVersion?: number;
 }) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -129,9 +131,18 @@ export default function TaskList({
   // Subtareas: qué tareas tienen el panel expandido y el resumen (total/completadas)
   // por tarea. El resumen arranca vacío y SubtaskList lo reporta tras su primer fetch.
   const [showSubtasks, setShowSubtasks] = useState<Record<string, boolean>>({});
+  // Sembrado con los counts del SSR para que los pills se vean desde el primer render;
+  // SubtaskList lo refina (a {total, completed}) al expandir.
   const [subtaskSummary, setSubtaskSummary] = useState<
     Record<string, { total: number; completed: number }>
-  >({});
+  >(() =>
+    Object.fromEntries(
+      Object.entries(initialSubtaskCounts ?? {}).map(([id, c]) => [
+        id,
+        { total: c.total, completed: c.done },
+      ]),
+    ),
+  );
 
   function toggleSubtasks(id: string) {
     setShowSubtasks((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -316,6 +327,12 @@ export default function TaskList({
 
   const pendientes = tasks.filter((t) => t.estado !== "done").length;
   const ordered = sortForDisplay(tasks);
+
+  // Progreso del proyecto (tareas hechas / total) para la barra de la cabecera.
+  const totalTasks = tasks.length;
+  const doneTasks = totalTasks - pendientes;
+  const taskPct = totalTasks > 0 ? (doneTasks / totalTasks) * 100 : 0;
+  const allTasksDone = totalTasks > 0 && doneTasks === totalTasks;
 
   function renderTask(task: Task) {
     const done = task.estado === "done";
@@ -506,12 +523,30 @@ export default function TaskList({
 
   return (
     <div className="flex flex-col p-6">
-      <div className="mb-4 flex items-baseline justify-between">
+      <div className={totalTasks > 0 ? "flex items-baseline justify-between" : "mb-4 flex items-baseline justify-between"}>
         <h2 className="text-sm font-semibold text-ink">Tareas</h2>
         <span className="text-xs text-muted">
           {pendientes} {pendientes === 1 ? "pendiente" : "pendientes"}
         </span>
       </div>
+
+      {/* Barra de progreso del proyecto: tareas completadas / total. */}
+      {totalTasks > 0 && (
+        <div className="mb-2 flex items-center gap-2 py-2">
+          <span className="shrink-0 text-xs tabular-nums text-muted">
+            {doneTasks} / {totalTasks} tareas
+          </span>
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
+            <div
+              className={[
+                "h-full rounded-full transition-all duration-200 ease-out",
+                allTasksDone ? "bg-green-500" : "bg-indigo-500",
+              ].join(" ")}
+              style={{ width: `${taskPct}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {ordered.length === 0 ? (
         <p className="mb-4 text-sm text-muted">

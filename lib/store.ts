@@ -160,6 +160,29 @@ export async function createSubtask(taskId: string, title: string): Promise<Subt
   return data as Subtask;
 }
 
+/**
+ * Cuenta total y completadas de subtareas para varias tareas en un solo SELECT.
+ * Devuelve un mapa task_id → { total, done }; tareas sin subtareas no aparecen.
+ */
+export async function getSubtaskCounts(
+  taskIds: string[],
+): Promise<Record<string, { total: number; done: number }>> {
+  if (taskIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from("subtasks")
+    .select("task_id, completed")
+    .in("task_id", taskIds);
+  if (error) throw new Error(error.message);
+
+  const counts: Record<string, { total: number; done: number }> = {};
+  for (const row of (data ?? []) as { task_id: string; completed: boolean }[]) {
+    const c = (counts[row.task_id] ??= { total: 0, done: 0 });
+    c.total += 1;
+    if (row.completed) c.done += 1;
+  }
+  return counts;
+}
+
 /** Campos editables de una subtarea. Solo se actualiza lo que venga. */
 export interface SubtaskPatch {
   title?: string;

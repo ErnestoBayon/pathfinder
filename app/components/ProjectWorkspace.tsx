@@ -12,11 +12,13 @@ export default function ProjectWorkspace({
   projectId,
   initialTasks,
   initialMessages,
+  initialSubtaskCounts,
   calendar,
 }: {
   projectId: string;
   initialTasks: Task[];
   initialMessages: Message[];
+  initialSubtaskCounts?: Record<string, { total: number; done: number }>;
   calendar?: ReactNode;
 }) {
   const [taskVersion, setTaskVersion] = useState(0);
@@ -25,7 +27,12 @@ export default function ProjectWorkspace({
     <div className="mt-10 grid grid-cols-1 items-start gap-6 lg:grid-cols-[3fr_3fr]">
       {/* Columna izquierda — tareas */}
       <section className="rounded-2xl border border-line bg-surface shadow-note">
-        <TaskList projectId={projectId} initialTasks={initialTasks} taskVersion={taskVersion} />
+        <TaskList
+          projectId={projectId}
+          initialTasks={initialTasks}
+          initialSubtaskCounts={initialSubtaskCounts}
+          taskVersion={taskVersion}
+        />
       </section>
 
       {/* Sidebar derecho — zona de widgets */}

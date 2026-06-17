@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProjectWorkspace from "../../components/ProjectWorkspace";
 import MiniCalendar from "../../components/MiniCalendar";
-import { getProject, listTasks, loadMessages } from "@/lib/store";
+import { getProject, getSubtaskCounts, listTasks, loadMessages } from "@/lib/store";
 
 // Lee el estado fresco de Supabase en cada request.
 export const dynamic = "force-dynamic";
@@ -14,6 +14,8 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
   const tasks = await listTasks(params.id).catch(() => []);
   const messages = await loadMessages(params.id).catch(() => []);
   const deadlineDates = tasks.filter((t) => t.deadline).map((t) => t.deadline!.slice(0, 10));
+  // Counts de subtareas (una sola query) para pintar los pills desde el primer render.
+  const subtaskCounts = await getSubtaskCounts(tasks.map((t) => t.id)).catch(() => ({}));
 
   return (
     <div className="min-h-screen">
@@ -46,6 +48,7 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
           projectId={project.id}
           initialTasks={tasks}
           initialMessages={messages}
+          initialSubtaskCounts={subtaskCounts}
           calendar={<MiniCalendar deadlineDates={deadlineDates} projectId={project.id} />}
         />
       </main>
