@@ -20,6 +20,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { PRIORIDAD_ORDEN } from "@/lib/types";
 import type { Prioridad, Task } from "@/lib/types";
+import SubtaskList from "./SubtaskList";
 
 // Rank para ordenar en cliente (debe espejar el orden del store).
 const RANK = Object.fromEntries(PRIORIDAD_ORDEN.map((p, i) => [p, i])) as Record<Prioridad, number>;
@@ -69,6 +70,22 @@ function StarIcon() {
   );
 }
 
+function ListIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+    </svg>
+  );
+}
+
+// Color del pill de subtareas según el progreso: índigo (neutral, 0 hechas),
+// ámbar (en progreso) o verde (todas completas).
+function subtaskPillClasses(total: number, completed: number): string {
+  if (completed >= total) return "border-green-200 bg-green-50 text-green-700";
+  if (completed > 0) return "border-amber-200 bg-amber-50 text-amber-700";
+  return "border-indigo-200 bg-indigo-50 text-indigo-600";
+}
+
 type SortableState = ReturnType<typeof useSortable>;
 interface SortableRenderProps {
   setNodeRef: SortableState["setNodeRef"];
@@ -94,10 +111,12 @@ function Sortable({ id, children }: { id: string; children: (p: SortableRenderPr
 export default function TaskList({
   projectId,
   initialTasks,
+  initialSubtaskCounts,
   taskVersion = 0,
 }: {
   projectId: string;
   initialTasks: Task[];
+  initialSubtaskCounts?: Record<string, { total: number; done: number }>;
   taskVersion?: number;
 }) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -108,6 +127,40 @@ export default function TaskList({
   // Edición inline: id de la tarea en edición y su texto temporal.
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+
+  // Subtareas: qué tareas tienen el panel expandido y el resumen (total/completadas)
+  // por tarea. El resumen arranca vacío y SubtaskList lo reporta tras su primer fetch.
+  const [showSubtasks, setShowSubtasks] = useState<Record<string, boolean>>({});
+  // Sembrado con los counts del SSR para que los pills se vean desde el primer render;
+  // SubtaskList lo refina (a {total, completed}) al expandir.
+  const [subtaskSummary, setSubtaskSummary] = useState<
+    Record<string, { total: number; completed: number }>
+  >(() =>
+    Object.fromEntries(
+      Object.entries(initialSubtaskCounts ?? {}).map(([id, c]) => [
+        id,
+        { total: c.total, completed: c.done },
+      ]),
+    ),
+  );
+
+  function toggleSubtasks(id: string) {
+    setShowSubtasks((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  function setSummary(id: string, s: { total: number; completed: number }) {
+    setSubtaskSummary((prev) => {
+      const cur = prev[id];
+      if (cur && cur.total === s.total && cur.completed === s.completed) return prev;
+      return { ...prev, [id]: s };
+    });
+  }
+
+  // Sincroniza el checkbox de la tarea cuando SubtaskList la cierra desde su banner
+  // (el PATCH ya lo hizo SubtaskList; aquí solo actualizamos el estado local).
+  function markTaskDoneLocal(id: string) {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, estado: "done" } : t)));
+  }
   // ESC cancela; evita que el onBlur que dispara después guarde el cambio.
   const skipBlur = useRef(false);
 
@@ -275,6 +328,12 @@ export default function TaskList({
   const pendientes = tasks.filter((t) => t.estado !== "done").length;
   const ordered = sortForDisplay(tasks);
 
+  // Progreso del proyecto (tareas hechas / total) para la barra de la cabecera.
+  const totalTasks = tasks.length;
+  const doneTasks = totalTasks - pendientes;
+  const taskPct = totalTasks > 0 ? (doneTasks / totalTasks) * 100 : 0;
+  const allTasksDone = totalTasks > 0 && doneTasks === totalTasks;
+
   function renderTask(task: Task) {
     const done = task.estado === "done";
     const editing = editingId === task.id;
@@ -283,7 +342,7 @@ export default function TaskList({
       <Sortable key={task.id} id={task.id}>
         {({ setNodeRef, setActivatorNodeRef, attributes, listeners, style, isDragging }) => (
           <li ref={setNodeRef} style={style} className={isDragging ? "relative z-10 opacity-70" : ""}>
-            <div className="group flex items-center gap-1.5 rounded-lg px-1 py-2 transition-colors duration-200 ease-out hover:bg-canvas">
+            <div className="group flex h-auto items-start gap-1.5 rounded-lg px-1 py-2 transition-colors duration-200 ease-out hover:bg-canvas">
               <span
                 ref={setActivatorNodeRef}
                 {...attributes}
@@ -334,7 +393,7 @@ export default function TaskList({
                 <span
                   onClick={() => startEdit(task)}
                   className={[
-                    "min-w-0 flex-1 cursor-text truncate text-sm leading-relaxed",
+                    "min-w-0 flex-1 cursor-text whitespace-normal break-words text-sm leading-snug",
                     done ? "text-muted line-through" : "text-ink",
                   ].join(" ")}
                 >
@@ -403,6 +462,59 @@ export default function TaskList({
                 ×
               </button>
             </div>
+
+            {/* Subtareas: badge/pill + panel, indentado para alinear bajo el título. */}
+            <div className="pl-9 pr-1">
+              {(() => {
+                const expanded = !!showSubtasks[task.id];
+                const total = subtaskSummary[task.id]?.total ?? 0;
+                const completed = subtaskSummary[task.id]?.completed ?? 0;
+
+                if (total === 0) {
+                  // Sin subtareas: solo un texto muted que abre el panel para agregar.
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => toggleSubtasks(task.id)}
+                      aria-expanded={expanded}
+                      className="inline-flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted transition-colors duration-200 ease-out hover:text-ink"
+                    >
+                      <span aria-hidden>{expanded ? "▾" : "▸"}</span>
+                      Agregar subtareas
+                    </button>
+                  );
+                }
+
+                // Con subtareas: pill compacto visible aun colapsado.
+                return (
+                  <button
+                    type="button"
+                    onClick={() => toggleSubtasks(task.id)}
+                    aria-expanded={expanded}
+                    aria-label={`Subtareas: ${completed} de ${total} completadas`}
+                    className={[
+                      "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium leading-none transition-colors duration-200 ease-out",
+                      subtaskPillClasses(total, completed),
+                    ].join(" ")}
+                  >
+                    <span aria-hidden>{expanded ? "▾" : "▸"}</span>
+                    <ListIcon />
+                    <span className="tabular-nums">{total}</span>
+                    <span className="opacity-50">·</span>
+                    <span className="tabular-nums">
+                      {completed}/{total}
+                    </span>
+                  </button>
+                );
+              })()}
+              {showSubtasks[task.id] && (
+                <SubtaskList
+                  taskId={task.id}
+                  onSummaryChange={(s) => setSummary(task.id, s)}
+                  onTaskCompleted={() => markTaskDoneLocal(task.id)}
+                />
+              )}
+            </div>
           </li>
         )}
       </Sortable>
@@ -411,12 +523,30 @@ export default function TaskList({
 
   return (
     <div className="flex flex-col p-6">
-      <div className="mb-4 flex items-baseline justify-between">
+      <div className={totalTasks > 0 ? "flex items-baseline justify-between" : "mb-4 flex items-baseline justify-between"}>
         <h2 className="text-sm font-semibold text-ink">Tareas</h2>
         <span className="text-xs text-muted">
           {pendientes} {pendientes === 1 ? "pendiente" : "pendientes"}
         </span>
       </div>
+
+      {/* Barra de progreso del proyecto: tareas completadas / total. */}
+      {totalTasks > 0 && (
+        <div className="mb-2 flex items-center gap-2 py-2">
+          <span className="shrink-0 text-xs tabular-nums text-muted">
+            {doneTasks} / {totalTasks} tareas
+          </span>
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
+            <div
+              className={[
+                "h-full rounded-full transition-all duration-200 ease-out",
+                allTasksDone ? "bg-green-500" : "bg-indigo-500",
+              ].join(" ")}
+              style={{ width: `${taskPct}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {ordered.length === 0 ? (
         <p className="mb-4 text-sm text-muted">

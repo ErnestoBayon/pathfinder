@@ -41,7 +41,7 @@ export default function MiniCalendar({
       href="/calendar"
       aria-label="Ver en calendario"
       data-project={projectId}
-      className="block w-56 cursor-pointer rounded-2xl bg-white p-3 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md"
+      className="block w-full flex-shrink-0 cursor-pointer rounded-2xl bg-white p-3 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md"
     >
       <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-red-500">
         {monthLabel}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProjectWorkspace from "../../components/ProjectWorkspace";
 import MiniCalendar from "../../components/MiniCalendar";
-import { getProject, listTasks, loadMessages } from "@/lib/store";
+import { getProject, getSubtaskCounts, listTasks, loadMessages } from "@/lib/store";
 
 // Lee el estado fresco de Supabase en cada request.
 export const dynamic = "force-dynamic";
@@ -14,6 +14,8 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
   const tasks = await listTasks(params.id).catch(() => []);
   const messages = await loadMessages(params.id).catch(() => []);
   const deadlineDates = tasks.filter((t) => t.deadline).map((t) => t.deadline!.slice(0, 10));
+  // Counts de subtareas (una sola query) para pintar los pills desde el primer render.
+  const subtaskCounts = await getSubtaskCounts(tasks.map((t) => t.id)).catch(() => ({}));
 
   return (
     <div className="min-h-screen">
@@ -36,9 +38,9 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
             {project.nombre}
           </h1>
           {project.descripcion && (
-            <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted">
+            <div className="mt-2 max-h-28 max-w-2xl overflow-y-auto rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm leading-relaxed text-gray-500">
               {project.descripcion}
-            </p>
+            </div>
           )}
         </header>
 
@@ -46,11 +48,8 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
           projectId={project.id}
           initialTasks={tasks}
           initialMessages={messages}
-          calendar={
-            deadlineDates.length > 0 ? (
-              <MiniCalendar deadlineDates={deadlineDates} projectId={project.id} />
-            ) : null
-          }
+          initialSubtaskCounts={subtaskCounts}
+          calendar={<MiniCalendar deadlineDates={deadlineDates} projectId={project.id} />}
         />
       </main>
     </div>

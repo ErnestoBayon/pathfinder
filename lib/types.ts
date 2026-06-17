@@ -32,6 +32,17 @@ export interface Task {
   created_at?: string;
 }
 
+// Tabla `subtasks`: id (uuid), task_id (text, FK → tasks.id), title (text),
+// completed (boolean, default false), position (integer), created_at (timestamptz)
+export interface Subtask {
+  id: string;
+  task_id: string;
+  title: string;
+  completed: boolean;
+  position: number;
+  created_at?: string;
+}
+
 // Tabla `activity_log`: id (bigint), project_id (text), timestamp (timestamptz), descripcion (text)
 export interface ActivityEntry {
   id: number;
