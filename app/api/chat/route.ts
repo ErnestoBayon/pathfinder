@@ -59,7 +59,7 @@ const toolDefinitions: Anthropic.Tool[] = [
         title: { type: "string", description: "Clear, actionable task title" },
         priority: {
           type: "string",
-          enum: ["alta", "media", "baja"],
+          enum: ["High", "Medium", "Low"],
           description: "Task priority",
         },
         deadline: { type: "string", description: "Deadline in YYYY-MM-DD format" },
@@ -76,7 +76,7 @@ const toolDefinitions: Anthropic.Tool[] = [
       properties: {
         task_id: { type: "string", description: "ID of the task to update" },
         title: { type: "string" },
-        priority: { type: "string", enum: ["alta", "media", "baja"] },
+        priority: { type: "string", enum: ["High", "Medium", "Low"] },
         deadline: { type: "string", description: "YYYY-MM-DD format" },
         status: { type: "string", enum: ["pending", "in_progress", "done"] },
       },
@@ -166,7 +166,7 @@ async function executeTool(
       if (!title) return { success: false, error: "title is required" };
       const prioridad = PRIORIDAD_ORDEN.includes(args.priority as Prioridad)
         ? (args.priority as Prioridad)
-        : "media";
+        : "Medium";
       const deadline =
         typeof args.deadline === "string" && DATE_RE.test(args.deadline) ? args.deadline : null;
       const task = await createTask(projectId, title, { prioridad, deadline });

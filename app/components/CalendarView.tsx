@@ -23,9 +23,9 @@ const DIAS = ["M", "T", "W", "T", "F", "S", "S"];
 
 // Chip por prioridad (light, vibrante con ring).
 const CHIP_STYLE: Record<Prioridad, string> = {
-  alta: "bg-red-50 text-red-600 ring-1 ring-red-200",
-  media: "bg-amber-50 text-amber-600 ring-1 ring-amber-200",
-  baja: "bg-gray-50 text-gray-500 ring-1 ring-gray-200",
+  High: "bg-red-50 text-red-600 ring-1 ring-red-200",
+  Medium: "bg-amber-50 text-amber-600 ring-1 ring-amber-200",
+  Low: "bg-gray-50 text-gray-500 ring-1 ring-gray-200",
 };
 const CHIP_FALLBACK = "bg-gray-50 text-gray-500 ring-1 ring-gray-200";
 
@@ -34,9 +34,9 @@ type PriorityFilter = Prioridad | "all";
 // Pills del filtro de prioridad: activo = fondo sólido del color; inactivo = borde del color.
 const PRIORITY_FILTERS: { key: PriorityFilter; label: string; active: string; inactive: string }[] = [
   { key: "all", label: "All", active: "bg-gray-900 text-white", inactive: "border border-gray-200 text-gray-600 hover:bg-gray-50" },
-  { key: "alta", label: "High", active: "bg-red-500 text-white", inactive: "border border-red-300 text-red-600 hover:bg-red-50" },
-  { key: "media", label: "Medium", active: "bg-amber-500 text-white", inactive: "border border-amber-300 text-amber-600 hover:bg-amber-50" },
-  { key: "baja", label: "Low", active: "bg-gray-400 text-white", inactive: "border border-gray-300 text-gray-500 hover:bg-gray-50" },
+  { key: "High", label: "High", active: "bg-red-500 text-white", inactive: "border border-red-300 text-red-600 hover:bg-red-50" },
+  { key: "Medium", label: "Medium", active: "bg-amber-500 text-white", inactive: "border border-amber-300 text-amber-600 hover:bg-amber-50" },
+  { key: "Low", label: "Low", active: "bg-gray-400 text-white", inactive: "border border-gray-300 text-gray-500 hover:bg-gray-50" },
 ];
 
 function pad(n: number) {

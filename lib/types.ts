@@ -3,10 +3,10 @@
 
 export type TaskState = "pending" | "done";
 
-export type Prioridad = "alta" | "media" | "baja";
+export type Prioridad = "High" | "Medium" | "Low";
 
 /** Orden de prioridad para ordenar la lista (más urgente primero). */
-export const PRIORIDAD_ORDEN: Prioridad[] = ["alta", "media", "baja"];
+export const PRIORIDAD_ORDEN: Prioridad[] = ["High", "Medium", "Low"];
 
 // Tabla `projects`: id (text), nombre (text), descripcion (text), created_at (timestamptz)
 export interface Project {
@@ -17,7 +17,7 @@ export interface Project {
 }
 
 // Tabla `tasks`: id (text), project_id (text), texto (text), estado (text 'pending'/'done'),
-// prioridad (text 'alta'/'media'/'baja', default 'media'), orden (integer, default 0),
+// prioridad (text 'High'/'Medium'/'Low', default 'Medium'), orden (integer, default 0),
 // deadline (timestamptz nullable), created_at (timestamptz)
 export interface Task {
   id: string;

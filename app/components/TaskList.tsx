@@ -27,9 +27,9 @@ const RANK = Object.fromEntries(PRIORIDAD_ORDEN.map((p, i) => [p, i])) as Record
 
 // Estilo del badge de prioridad: el color ilumina, no rellena (ver DESIGN.md).
 const PRIORIDAD_STYLE: Record<Prioridad, { label: string; color: string; bg: string }> = {
-  alta: { label: "High", color: "#dc2626", bg: "rgba(220,38,38,0.12)" },
-  media: { label: "Medium", color: "#d97706", bg: "rgba(217,119,6,0.12)" },
-  baja: { label: "Low", color: "#16a34a", bg: "rgba(22,163,74,0.12)" },
+  High: { label: "High", color: "#dc2626", bg: "rgba(220,38,38,0.12)" },
+  Medium: { label: "Medium", color: "#d97706", bg: "rgba(217,119,6,0.12)" },
+  Low: { label: "Low", color: "#16a34a", bg: "rgba(22,163,74,0.12)" },
 };
 
 const STAR_COLOR = "#7c3aed";

@@ -92,7 +92,7 @@ export async function createTask(
       project_id: projectId,
       texto,
       estado: "pending",
-      prioridad: opts.prioridad ?? "media",
+      prioridad: opts.prioridad ?? "Medium",
       deadline: opts.deadline ?? null,
     })
     .select(TASK_COLS)

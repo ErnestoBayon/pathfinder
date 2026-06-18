@@ -35,7 +35,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (body?.prioridad !== undefined) {
     if (!PRIORIDAD_ORDEN.includes(body.prioridad)) {
       return NextResponse.json(
-        { error: "prioridad debe ser alta, media o baja" },
+        { error: "priority must be High, Medium or Low" },
         { status: 400 },
       );
     }
