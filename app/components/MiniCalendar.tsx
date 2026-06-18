@@ -3,7 +3,7 @@ import Link from "next/link";
 // Widget de calendario estilo iOS: mes actual, hoy en círculo rojo, días con deadline
 // marcados con un punto rojo. Todo el widget enlaza a /calendar. Server component.
 // Semana inicia lunes (igual que el calendario principal).
-const DIAS = ["L", "M", "X", "J", "V", "S", "D"];
+const DIAS = ["M", "T", "W", "T", "F", "S", "S"];
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -25,7 +25,7 @@ export default function MiniCalendar({
   const todayStr = ymd(today);
   const deadlineSet = new Set(deadlineDates);
 
-  const monthLabel = today.toLocaleString("es-ES", { month: "long" }).toUpperCase();
+  const monthLabel = today.toLocaleString("en-US", { month: "long" }).toUpperCase();
 
   const first = new Date(year, month, 1);
   const lead = (first.getDay() + 6) % 7; // 0 = lunes
@@ -39,7 +39,7 @@ export default function MiniCalendar({
   return (
     <Link
       href="/calendar"
-      aria-label="Ver en calendario"
+      aria-label="View in calendar"
       data-project={projectId}
       className="block w-full flex-shrink-0 cursor-pointer rounded-2xl bg-white p-3 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md"
     >

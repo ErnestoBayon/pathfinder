@@ -16,8 +16,8 @@ export default function TopNav() {
   const pathname = usePathname();
 
   const links = [
-    { href: "/home", label: "Proyectos", icon: null as React.ReactNode },
-    { href: "/calendar", label: "Calendario", icon: <CalendarIcon /> },
+    { href: "/home", label: "Projects", icon: null as React.ReactNode },
+    { href: "/calendar", label: "Calendar", icon: <CalendarIcon /> },
   ];
 
   return (

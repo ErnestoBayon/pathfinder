@@ -23,13 +23,13 @@ export default function HomeProjects({ initialProjects }: { initialProjects: Pro
             type="button"
             onClick={() => setModalOpen(true)}
             className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-2xl leading-none text-white transition-colors duration-200 ease-out hover:bg-accent-hover"
-            aria-label="Crear proyecto"
+            aria-label="Create project"
           >
             +
           </button>
-          <h2 className="mt-5 text-lg font-semibold text-ink">Crea tu primer proyecto</h2>
+          <h2 className="mt-5 text-lg font-semibold text-ink">Create your first project</h2>
           <p className="mt-2 max-w-xs text-sm text-muted">
-            Aún no tienes proyectos. Empieza creando uno para organizar tus tareas.
+            You don't have any projects yet. Start by creating one to organize your tasks.
           </p>
         </div>
       ) : (

@@ -19,7 +19,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   if (body?.estado !== undefined) {
     if (body.estado !== "pending" && body.estado !== "done") {
-      return NextResponse.json({ error: 'estado debe ser "pending" o "done"' }, { status: 400 });
+      return NextResponse.json({ error: 'estado must be "pending" or "done"' }, { status: 400 });
     }
     patch.estado = body.estado;
   }
@@ -27,7 +27,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (body?.texto !== undefined) {
     const texto = body.texto.toString().trim();
     if (!texto) {
-      return NextResponse.json({ error: "El texto no puede ir vacío" }, { status: 400 });
+      return NextResponse.json({ error: "Text can't be empty" }, { status: 400 });
     }
     patch.texto = texto;
   }
@@ -35,7 +35,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (body?.prioridad !== undefined) {
     if (!PRIORIDAD_ORDEN.includes(body.prioridad)) {
       return NextResponse.json(
-        { error: "prioridad debe ser alta, media o baja" },
+        { error: "priority must be High, Medium or Low" },
         { status: 400 },
       );
     }
@@ -51,20 +51,20 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (body?.orden !== undefined) {
     const orden = Number(body.orden);
     if (!Number.isFinite(orden)) {
-      return NextResponse.json({ error: "orden debe ser un número" }, { status: 400 });
+      return NextResponse.json({ error: "orden must be a number" }, { status: 400 });
     }
     patch.orden = orden;
   }
 
   if (body?.es_clave !== undefined) {
     if (typeof body.es_clave !== "boolean") {
-      return NextResponse.json({ error: "es_clave debe ser booleano" }, { status: 400 });
+      return NextResponse.json({ error: "es_clave must be a boolean" }, { status: 400 });
     }
     patch.es_clave = body.es_clave;
   }
 
   if (Object.keys(patch).length === 0) {
-    return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
   try {
@@ -73,7 +73,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";
     return NextResponse.json(
-      { error: `No se pudo actualizar la tarea: ${detail}` },
+      { error: `Couldn't update the task: ${detail}` },
       { status: 500 },
     );
   }
@@ -93,7 +93,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";
     return NextResponse.json(
-      { error: `No se pudo eliminar la tarea: ${detail}` },
+      { error: `Couldn't delete the task: ${detail}` },
       { status: 500 },
     );
   }

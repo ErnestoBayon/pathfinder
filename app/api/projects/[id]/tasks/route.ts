@@ -17,7 +17,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";
     return NextResponse.json(
-      { error: `No se pudieron cargar las tareas: ${detail}` },
+      { error: `Couldn't load the tasks: ${detail}` },
       { status: 500 },
     );
   }
@@ -34,7 +34,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const texto = (body?.texto ?? "").toString().trim();
 
   if (!texto) {
-    return NextResponse.json({ error: "El texto de la tarea es requerido" }, { status: 400 });
+    return NextResponse.json({ error: "Task text is required" }, { status: 400 });
   }
 
   try {
@@ -43,7 +43,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";
     return NextResponse.json(
-      { error: `No se pudo crear la tarea: ${detail}` },
+      { error: `Couldn't create the task: ${detail}` },
       { status: 500 },
     );
   }

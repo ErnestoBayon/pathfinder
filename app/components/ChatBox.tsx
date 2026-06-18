@@ -60,10 +60,10 @@ export default function ChatBox({
       if (data.toolsUsed) onTasksCreated?.();
       setMessages((m) => [
         ...m,
-        { role: "pm", text: data.reply ?? data.error ?? "Algo salió mal. Intenta de nuevo." },
+        { role: "pm", text: data.reply ?? data.error ?? "Something went wrong. Please try again." },
       ]);
     } catch {
-      setMessages((m) => [...m, { role: "pm", text: "No pude conectar. Revisa tu conexión." }]);
+      setMessages((m) => [...m, { role: "pm", text: "Couldn't connect. Check your connection." }]);
     } finally {
       setSending(false);
       scrollToBottom();
@@ -81,13 +81,13 @@ export default function ChatBox({
     <div className="flex h-full flex-col p-6">
       <div className="mb-4 flex items-center gap-3">
         <AgentAvatar color="#4F46E5" state={sending ? "thinking" : "active"} size={40} />
-        <h2 className="text-sm font-semibold text-ink">Tu PM</h2>
+        <h2 className="text-sm font-semibold text-ink">Your PM</h2>
       </div>
 
       <div ref={scrollRef} className="no-scrollbar mb-4 flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto">
         {messages.length === 0 ? (
           <p className="text-sm text-muted">
-            Cuéntame en qué andas o pídeme orden con tus tareas. Aquí ando.
+            Tell me what you're working on or ask me to sort out your tasks. I'm here.
           </p>
         ) : (
           messages.map((m, i) => (
@@ -106,7 +106,7 @@ export default function ChatBox({
         {sending && (
           <div className="flex justify-start">
             <span className="rounded-2xl bg-canvas px-4 py-2.5 text-sm text-muted">
-              escribiendo…
+              typing…
             </span>
           </div>
         )}
@@ -117,7 +117,7 @@ export default function ChatBox({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Escríbele a tu PM…"
+          placeholder="Message your PM…"
           disabled={sending}
           className="flex-1 rounded-full border border-line bg-surface px-5 py-3 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-muted focus:border-accent"
         />
@@ -127,7 +127,7 @@ export default function ChatBox({
           disabled={sending || input.trim() === ""}
           className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-accent-hover disabled:opacity-40 disabled:hover:bg-accent"
         >
-          Enviar
+          Send
         </button>
       </div>
     </div>

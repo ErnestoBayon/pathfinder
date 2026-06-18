@@ -157,7 +157,7 @@ export default function SubtaskList({
               <button
                 type="button"
                 onClick={() => void toggle(sub)}
-                aria-label={sub.completed ? "Marcar como pendiente" : "Marcar como hecha"}
+                aria-label={sub.completed ? "Mark as pending" : "Mark as done"}
                 className={[
                   "flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border text-[10px] leading-none transition-all duration-200 ease-out",
                   sub.completed
@@ -178,7 +178,7 @@ export default function SubtaskList({
               <button
                 type="button"
                 onClick={() => void remove(sub)}
-                aria-label="Eliminar subtarea"
+                aria-label="Delete subtask"
                 className="shrink-0 px-1 text-sm leading-none text-muted opacity-0 transition-opacity duration-200 ease-out hover:text-ink group-hover/sub:opacity-100"
               >
                 ×
@@ -199,7 +199,7 @@ export default function SubtaskList({
         <input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
-          placeholder="Agregar subtarea…"
+          placeholder="Add subtask…"
           className="min-w-0 flex-1 rounded-md border border-line bg-surface px-2 py-1 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-muted focus:border-accent"
         />
         <button
@@ -207,7 +207,7 @@ export default function SubtaskList({
           disabled={newTitle.trim() === "" || loading}
           className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-accent transition-opacity duration-200 ease-out hover:opacity-80 disabled:opacity-40"
         >
-          Agregar
+          Add
         </button>
       </form>
 
@@ -215,19 +215,19 @@ export default function SubtaskList({
       {showDoneBanner && (
         <div className="mt-1 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
           <span className="min-w-0 flex-1">
-            ✓ Todas las subtareas completadas — ¿marcar tarea como lista?
+            ✓ All subtasks completed — mark task as done?
           </span>
           <button
             type="button"
             onClick={() => void markTaskDone()}
             className="shrink-0 rounded-full bg-green-600 px-2.5 py-0.5 text-xs font-medium text-white transition-colors duration-200 ease-out hover:bg-green-700"
           >
-            Marcar lista
+            Mark done
           </button>
           <button
             type="button"
             onClick={() => setDismissed(true)}
-            aria-label="Descartar"
+            aria-label="Dismiss"
             className="shrink-0 px-1 text-base leading-none text-green-700/70 transition-colors duration-200 ease-out hover:text-green-900"
           >
             ×

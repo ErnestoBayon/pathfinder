@@ -36,7 +36,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   if (body?.completed !== undefined) {
     if (typeof body.completed !== "boolean") {
-      return NextResponse.json({ error: "completed debe ser booleano" }, { status: 400 });
+      return NextResponse.json({ error: "completed must be a boolean" }, { status: 400 });
     }
     patch.completed = body.completed;
   }
@@ -44,13 +44,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (body?.title !== undefined) {
     const title = body.title.toString().trim();
     if (!title) {
-      return NextResponse.json({ error: "El título no puede ir vacío" }, { status: 400 });
+      return NextResponse.json({ error: "Title can't be empty" }, { status: 400 });
     }
     patch.title = title;
   }
 
   if (Object.keys(patch).length === 0) {
-    return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
   try {
@@ -59,7 +59,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";
     return NextResponse.json(
-      { error: `No se pudo actualizar la subtarea: ${detail}` },
+      { error: `Couldn't update the subtask: ${detail}` },
       { status: 500 },
     );
   }
@@ -79,7 +79,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";
     return NextResponse.json(
-      { error: `No se pudo eliminar la subtarea: ${detail}` },
+      { error: `Couldn't delete the subtask: ${detail}` },
       { status: 500 },
     );
   }

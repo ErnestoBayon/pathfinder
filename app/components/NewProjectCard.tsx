@@ -11,7 +11,7 @@ export default function NewProjectCard({ onClick }: { onClick: () => void }) {
       <span className="flex h-11 w-11 items-center justify-center rounded-full border border-current text-2xl leading-none">
         +
       </span>
-      <span className="text-sm font-medium">Nuevo proyecto</span>
+      <span className="text-sm font-medium">New project</span>
     </button>
   );
 }
