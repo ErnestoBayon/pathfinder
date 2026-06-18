@@ -25,7 +25,7 @@ export default function ProjectCard({ project }: { project: Project }) {
       </div>
 
       <span className="mt-3 text-[13px] font-medium" style={{ color }}>
-        Ver proyecto →
+        View project →
       </span>
     </Link>
   );
