@@ -6,7 +6,7 @@ export const PROJECT_COLORS = [
   "#5B5BD6",
   "#0E9F6E",
   "#D97706",
-  "#7C5CFC",
+  "#EC4899",
   "#E11D48",
   "#0891B2",
 ] as const;
