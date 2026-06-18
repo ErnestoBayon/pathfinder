@@ -129,55 +129,73 @@ export default function SubtaskList({
   const showDoneBanner = allDone && !dismissed;
 
   return (
-    <div className="mt-1 flex flex-col gap-1.5 pb-1">
+    <div className="mt-1.5 flex flex-col gap-2 pb-1">
       {/* Barra de progreso: solo si hay subtareas. */}
       {total > 0 && (
         <div className="flex items-center gap-2">
           <span className="shrink-0 text-xs tabular-nums text-muted">
             {done} / {total}
           </span>
-          <div className="h-1 flex-1 overflow-hidden rounded-full bg-gray-100">
+          <div className="h-1 flex-1 overflow-hidden rounded-full bg-canvas">
             <div
-              className="h-full rounded-full bg-green-500 transition-all duration-200 ease-out"
+              className="h-full rounded-full bg-done transition-all duration-200 ease-out"
               style={{ width: `${pct}%` }}
             />
           </div>
         </div>
       )}
 
-      {/* Checklist. */}
-      <ul className="flex flex-col">
-        {subtasks.map((sub) => (
-          <li key={sub.id} className="group/sub flex items-center gap-2 py-1">
-            <input
-              type="checkbox"
-              checked={sub.completed}
-              onChange={() => void toggle(sub)}
-              aria-label={sub.completed ? "Marcar como pendiente" : "Marcar como hecha"}
-              className="h-3.5 w-3.5 shrink-0 cursor-pointer accent-done"
-            />
-            <span
-              className={[
-                "min-w-0 flex-1 break-words text-sm leading-snug",
-                sub.completed ? "text-gray-400 line-through" : "text-ink",
-              ].join(" ")}
+      {/* Checklist: guía vertical a la izquierda para anidar visualmente bajo la tarea. */}
+      {subtasks.length > 0 && (
+        <ul className="flex flex-col gap-0.5 border-l border-line pl-2.5">
+          {subtasks.map((sub) => (
+            <li
+              key={sub.id}
+              className="group/sub flex items-center gap-2.5 rounded-md px-1.5 py-1 transition-colors duration-200 ease-out hover:bg-canvas"
             >
-              {sub.title}
-            </span>
-            <button
-              type="button"
-              onClick={() => void remove(sub)}
-              aria-label="Eliminar subtarea"
-              className="shrink-0 px-1 text-sm leading-none text-muted opacity-0 transition-opacity duration-200 ease-out hover:text-ink group-hover/sub:opacity-100"
-            >
-              ×
-            </button>
-          </li>
-        ))}
-      </ul>
+              {/* Checkbox cuadrado (vs. el círculo de las tareas): se rellena de verde al completar. */}
+              <button
+                type="button"
+                onClick={() => void toggle(sub)}
+                aria-label={sub.completed ? "Marcar como pendiente" : "Marcar como hecha"}
+                className={[
+                  "flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border text-[10px] leading-none transition-all duration-200 ease-out",
+                  sub.completed
+                    ? "border-done bg-done text-white"
+                    : "border-line text-transparent hover:border-accent",
+                ].join(" ")}
+              >
+                ✓
+              </button>
+              <span
+                className={[
+                  "min-w-0 flex-1 break-words text-sm leading-snug transition-colors duration-200 ease-out",
+                  sub.completed ? "text-muted line-through" : "text-ink",
+                ].join(" ")}
+              >
+                {sub.title}
+              </span>
+              <button
+                type="button"
+                onClick={() => void remove(sub)}
+                aria-label="Eliminar subtarea"
+                className="shrink-0 px-1 text-sm leading-none text-muted opacity-0 transition-opacity duration-200 ease-out hover:text-ink group-hover/sub:opacity-100"
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
-      {/* Agregar subtarea. */}
-      <form onSubmit={add} className="flex items-center gap-2">
+      {/* Agregar subtarea: separado de la lista por un divisor sutil. */}
+      <form
+        onSubmit={add}
+        className={[
+          "flex items-center gap-2",
+          subtasks.length > 0 ? "mt-1 border-t border-line pt-2" : "",
+        ].join(" ")}
+      >
         <input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}

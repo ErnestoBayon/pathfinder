@@ -12,6 +12,7 @@ export interface CalendarTask {
   projectId: string;
   projectName: string;
   date: string; // YYYY-MM-DD
+  completed: boolean;
 }
 
 const MESES = [
@@ -60,6 +61,8 @@ export default function CalendarView({
   // Filtros (client-side, sin refetch).
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("todas");
   const [projectFilter, setProjectFilter] = useState<string>("todos");
+  // Las tareas completadas se ven (atenuadas) por defecto; este toggle las oculta.
+  const [showCompleted, setShowCompleted] = useState(true);
 
   // Celdas del grid (semana inicia lunes), con relleno de meses adyacentes.
   const cells = useMemo(() => {
@@ -98,7 +101,8 @@ export default function CalendarView({
     return (tasksByDate[dateStr] ?? []).filter(
       (t) =>
         (priorityFilter === "todas" || t.priority === priorityFilter) &&
-        (projectFilter === "todos" || t.projectId === projectFilter),
+        (projectFilter === "todos" || t.projectId === projectFilter) &&
+        (showCompleted || !t.completed),
     );
   }
 
@@ -162,6 +166,21 @@ export default function CalendarView({
               ))}
             </select>
           )}
+
+          {/* Mostrar / ocultar tareas completadas (visibles por defecto) */}
+          <button
+            type="button"
+            onClick={() => setShowCompleted((v) => !v)}
+            aria-pressed={showCompleted}
+            className={[
+              "rounded-full px-3 py-1 text-xs font-medium transition-colors duration-200 ease-out",
+              showCompleted
+                ? "bg-gray-900 text-white"
+                : "border border-gray-200 text-gray-600 hover:bg-gray-50",
+            ].join(" ")}
+          >
+            {showCompleted ? "Ocultar completadas" : "Mostrar completadas"}
+          </button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -234,6 +253,7 @@ export default function CalendarView({
                         className={[
                           "block overflow-hidden text-ellipsis whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-medium leading-tight transition-transform duration-100 hover:scale-[1.02]",
                           CHIP_STYLE[t.priority] ?? CHIP_FALLBACK,
+                          t.completed ? "line-through opacity-50" : "",
                         ].join(" ")}
                       >
                         {truncate(t.title)}
