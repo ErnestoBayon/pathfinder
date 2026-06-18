@@ -239,7 +239,7 @@ export default function TaskList({
   }
 
   function toggle(task: Task) {
-    void patchTask(task, { estado: task.estado === "done" ? "pending" : "done" });
+    void patchTask(task, { estado: task.estado === "done" ? "todo" : "done" });
   }
 
   function setPrioridad(task: Task, prioridad: Prioridad) {

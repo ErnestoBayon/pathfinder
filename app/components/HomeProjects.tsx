@@ -15,6 +15,10 @@ export default function HomeProjects({ initialProjects }: { initialProjects: Pro
     setModalOpen(false);
   }
 
+  function handleColorChange(id: string, color: string) {
+    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, color } : p)));
+  }
+
   return (
     <>
       {projects.length === 0 ? (
@@ -35,7 +39,7 @@ export default function HomeProjects({ initialProjects }: { initialProjects: Pro
       ) : (
         <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
-            <ProjectCard key={p.id} project={p} />
+            <ProjectCard key={p.id} project={p} onColorChange={handleColorChange} />
           ))}
           <NewProjectCard onClick={() => setModalOpen(true)} />
         </div>

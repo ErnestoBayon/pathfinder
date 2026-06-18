@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Project } from "@/lib/types";
+import { PROJECT_COLORS } from "@/lib/colors";
 
 export default function NewProjectModal({
   onClose,
@@ -12,6 +13,7 @@ export default function NewProjectModal({
 }) {
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const [color, setColor] = useState<string>(PROJECT_COLORS[0]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +37,7 @@ export default function NewProjectModal({
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: nombreTrim, descripcion: descripcion.trim() }),
+        body: JSON.stringify({ nombre: nombreTrim, descripcion: descripcion.trim(), color }),
       });
       const data = (await res.json()) as { project?: Project; error?: string };
       if (!res.ok || !data.project) {
@@ -94,6 +96,26 @@ export default function NewProjectModal({
               rows={3}
               className="resize-none rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-muted focus:border-accent"
             />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium text-ink">Color</span>
+            <div className="flex items-center gap-2.5">
+              {PROJECT_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  aria-label={`Color ${c}`}
+                  aria-pressed={color === c}
+                  className="h-6 w-6 rounded-full transition-transform duration-200 ease-out hover:scale-110"
+                  style={{
+                    backgroundColor: c,
+                    boxShadow: color === c ? `0 0 0 2px #ffffff, 0 0 0 4px ${c}` : undefined,
+                  }}
+                />
+              ))}
+            </div>
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}

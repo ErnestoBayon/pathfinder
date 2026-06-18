@@ -1,9 +1,10 @@
 import { supabase } from "./supabase";
 import { createClient } from "./supabase/server";
+import { DEFAULT_PROJECT_COLOR } from "./colors";
 import { PRIORIDAD_ORDEN } from "./types";
 import type { ChatRole, Message, Prioridad, Project, Subtask, Task, TaskState } from "./types";
 
-const TASK_COLS = "id, project_id, texto, estado, prioridad, orden, es_clave, deadline, created_at";
+const TASK_COLS = "id, project_id, texto, estado, prioridad, orden, es_clave, suggested, deadline, created_at";
 const MESSAGE_COLS = "id, project_id, role, content, created_at";
 const SUBTASK_COLS = "id, task_id, title, completed, position, created_at";
 
@@ -32,7 +33,7 @@ export async function listProjects(): Promise<Project[]> {
   // RLS ya filtra por dueño; el .eq es defensa en profundidad por si falta la policy.
   const { data, error } = await db
     .from("projects")
-    .select("id, nombre, descripcion, created_at")
+    .select("id, nombre, descripcion, color, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: true });
   if (error) throw new Error(error.message);
@@ -40,7 +41,11 @@ export async function listProjects(): Promise<Project[]> {
 }
 
 /** Crea un proyecto del usuario autenticado y lo devuelve. `descripcion` puede ir vacía. */
-export async function createProject(nombre: string, descripcion: string): Promise<Project> {
+export async function createProject(
+  nombre: string,
+  descripcion: string,
+  color: string = DEFAULT_PROJECT_COLOR,
+): Promise<Project> {
   const db = createClient();
   const {
     data: { user },
@@ -49,8 +54,8 @@ export async function createProject(nombre: string, descripcion: string): Promis
   const id = `proj-${crypto.randomUUID()}`;
   const { data, error } = await db
     .from("projects")
-    .insert({ id, nombre, descripcion, user_id: user.id })
-    .select("id, nombre, descripcion, created_at")
+    .insert({ id, nombre, descripcion, color, user_id: user.id })
+    .select("id, nombre, descripcion, color, created_at")
     .single();
   if (error) throw new Error(error.message);
   return data as Project;
@@ -61,11 +66,32 @@ export async function getProject(id: string): Promise<Project | null> {
   const db = createClient();
   const { data, error } = await db
     .from("projects")
-    .select("id, nombre, descripcion, created_at")
+    .select("id, nombre, descripcion, color, created_at")
     .eq("id", id)
     .maybeSingle();
   if (error) throw new Error(error.message);
   return (data as Project | null) ?? null;
+}
+
+/** Campos editables de un proyecto. Todos opcionales: solo se actualiza lo que venga. */
+export interface ProjectPatch {
+  nombre?: string;
+  descripcion?: string;
+  color?: string;
+}
+
+/** Aplica un patch parcial a un proyecto y devuelve el proyecto actualizado.
+ *  RLS limita la fila al dueño; el `.eq("id", id)` apunta a la fila concreta. */
+export async function updateProject(id: string, patch: ProjectPatch): Promise<Project> {
+  const db = createClient();
+  const { data, error } = await db
+    .from("projects")
+    .update(patch)
+    .eq("id", id)
+    .select("id, nombre, descripcion, color, created_at")
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Project;
 }
 
 /** Lista las tareas de un proyecto, ya ordenadas por prioridad y `orden`. */
@@ -91,7 +117,7 @@ export async function createTask(
       id,
       project_id: projectId,
       texto,
-      estado: "pending",
+      estado: "todo",
       prioridad: opts.prioridad ?? "Medium",
       deadline: opts.deadline ?? null,
     })
