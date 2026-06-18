@@ -16,10 +16,10 @@ export interface CalendarTask {
 }
 
 const MESES = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
-const DIAS = ["L", "M", "X", "J", "V", "S", "D"];
+const DIAS = ["M", "T", "W", "T", "F", "S", "S"];
 
 // Chip por prioridad (light, vibrante con ring).
 const CHIP_STYLE: Record<Prioridad, string> = {
@@ -29,14 +29,14 @@ const CHIP_STYLE: Record<Prioridad, string> = {
 };
 const CHIP_FALLBACK = "bg-gray-50 text-gray-500 ring-1 ring-gray-200";
 
-type PriorityFilter = Prioridad | "todas";
+type PriorityFilter = Prioridad | "all";
 
 // Pills del filtro de prioridad: activo = fondo sólido del color; inactivo = borde del color.
 const PRIORITY_FILTERS: { key: PriorityFilter; label: string; active: string; inactive: string }[] = [
-  { key: "todas", label: "Todas", active: "bg-gray-900 text-white", inactive: "border border-gray-200 text-gray-600 hover:bg-gray-50" },
-  { key: "alta", label: "Alta", active: "bg-red-500 text-white", inactive: "border border-red-300 text-red-600 hover:bg-red-50" },
-  { key: "media", label: "Media", active: "bg-amber-500 text-white", inactive: "border border-amber-300 text-amber-600 hover:bg-amber-50" },
-  { key: "baja", label: "Baja", active: "bg-gray-400 text-white", inactive: "border border-gray-300 text-gray-500 hover:bg-gray-50" },
+  { key: "all", label: "All", active: "bg-gray-900 text-white", inactive: "border border-gray-200 text-gray-600 hover:bg-gray-50" },
+  { key: "alta", label: "High", active: "bg-red-500 text-white", inactive: "border border-red-300 text-red-600 hover:bg-red-50" },
+  { key: "media", label: "Medium", active: "bg-amber-500 text-white", inactive: "border border-amber-300 text-amber-600 hover:bg-amber-50" },
+  { key: "baja", label: "Low", active: "bg-gray-400 text-white", inactive: "border border-gray-300 text-gray-500 hover:bg-gray-50" },
 ];
 
 function pad(n: number) {
@@ -59,8 +59,8 @@ export default function CalendarView({
   const [view, setView] = useState(() => ({ year: today.getFullYear(), month: today.getMonth() }));
 
   // Filtros (client-side, sin refetch).
-  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("todas");
-  const [projectFilter, setProjectFilter] = useState<string>("todos");
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
+  const [projectFilter, setProjectFilter] = useState<string>("all");
   // Las tareas completadas se ven (atenuadas) por defecto; este toggle las oculta.
   const [showCompleted, setShowCompleted] = useState(true);
 
@@ -91,8 +91,8 @@ export default function CalendarView({
 
   // Si el proyecto filtrado ya no tiene tareas en el mes visible, vuelve a "todos".
   useEffect(() => {
-    if (projectFilter !== "todos" && !monthProjects.some((p) => p.id === projectFilter)) {
-      setProjectFilter("todos");
+    if (projectFilter !== "all" && !monthProjects.some((p) => p.id === projectFilter)) {
+      setProjectFilter("all");
     }
   }, [monthProjects, projectFilter]);
 
@@ -100,8 +100,8 @@ export default function CalendarView({
   function tasksFor(dateStr: string): CalendarTask[] {
     return (tasksByDate[dateStr] ?? []).filter(
       (t) =>
-        (priorityFilter === "todas" || t.priority === priorityFilter) &&
-        (projectFilter === "todos" || t.projectId === projectFilter) &&
+        (priorityFilter === "all" || t.priority === priorityFilter) &&
+        (projectFilter === "all" || t.projectId === projectFilter) &&
         (showCompleted || !t.completed),
     );
   }
@@ -155,10 +155,10 @@ export default function CalendarView({
             <select
               value={projectFilter}
               onChange={(e) => setProjectFilter(e.target.value)}
-              aria-label="Filtrar por proyecto"
+              aria-label="Filter by project"
               className="cursor-pointer rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 outline-none transition-colors duration-200 ease-out hover:bg-gray-50"
             >
-              <option value="todos">Todos los proyectos</option>
+              <option value="all">All projects</option>
               {monthProjects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -179,12 +179,12 @@ export default function CalendarView({
                 : "border border-gray-200 text-gray-600 hover:bg-gray-50",
             ].join(" ")}
           >
-            {showCompleted ? "Ocultar completadas" : "Mostrar completadas"}
+            {showCompleted ? "Hide completed" : "Show completed"}
           </button>
         </div>
 
         <div className="flex items-center gap-2">
-          <button type="button" onClick={prevMonth} aria-label="Mes anterior" className={navBtn}>
+          <button type="button" onClick={prevMonth} aria-label="Previous month" className={navBtn}>
             ‹
           </button>
           <button
@@ -192,16 +192,16 @@ export default function CalendarView({
             onClick={goToday}
             className="rounded-full px-3 py-1.5 text-sm font-medium text-gray-600 ring-1 ring-gray-200 transition-colors duration-200 ease-out hover:bg-gray-50"
           >
-            Hoy
+            Today
           </button>
-          <button type="button" onClick={nextMonth} aria-label="Mes siguiente" className={navBtn}>
+          <button type="button" onClick={nextMonth} aria-label="Next month" className={navBtn}>
             ›
           </button>
         </div>
       </div>
 
       {!hasVisibleTasks && (
-        <p className="mb-4 text-center text-sm text-gray-500">No hay tareas con deadline este mes</p>
+        <p className="mb-4 text-center text-sm text-gray-500">No tasks with a deadline this month</p>
       )}
 
       {/* Contenedor del grid */}
@@ -266,7 +266,7 @@ export default function CalendarView({
                     </Link>
                   ))}
                   {extra > 0 && (
-                    <span className="px-1.5 text-[11px] font-medium text-gray-500">+{extra} más</span>
+                    <span className="px-1.5 text-[11px] font-medium text-gray-500">+{extra} more</span>
                   )}
                 </div>
               </div>

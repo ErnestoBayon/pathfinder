@@ -15,7 +15,7 @@ export default async function Home() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Pathfinder</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-            Tus proyectos
+            Your projects
           </h1>
         </div>
         <div className="flex items-center gap-4">

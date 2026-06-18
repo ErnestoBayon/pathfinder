@@ -18,7 +18,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";
     return NextResponse.json(
-      { error: `No se pudieron cargar las subtareas: ${detail}` },
+      { error: `Couldn't load the subtasks: ${detail}` },
       { status: 500 },
     );
   }
@@ -36,7 +36,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const title = (body?.title ?? "").toString().trim();
 
   if (!title) {
-    return NextResponse.json({ error: "El título de la subtarea es requerido" }, { status: 400 });
+    return NextResponse.json({ error: "Subtask title is required" }, { status: 400 });
   }
 
   try {
@@ -45,7 +45,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";
     return NextResponse.json(
-      { error: `No se pudo crear la subtarea: ${detail}` },
+      { error: `Couldn't create the subtask: ${detail}` },
       { status: 500 },
     );
   }

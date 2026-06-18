@@ -8,15 +8,15 @@ type Mode = "login" | "signup";
 
 const COPY = {
   login: {
-    title: "Inicia sesión",
-    altText: "¿No tienes cuenta?",
-    altLink: "Regístrate",
+    title: "Sign in",
+    altText: "Don't have an account?",
+    altLink: "Sign up",
     altHref: "/signup",
   },
   signup: {
-    title: "Crea tu cuenta",
-    altText: "¿Ya tienes cuenta?",
-    altLink: "Inicia sesión",
+    title: "Create your account",
+    altText: "Already have an account?",
+    altLink: "Sign in",
     altHref: "/login",
   },
 } as const;
@@ -39,7 +39,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
 
     // En éxito el navegador se redirige a Google; solo manejamos el fallo.
     if (error) {
-      setError("No se pudo conectar con Google. Intenta de nuevo.");
+      setError("Couldn't connect with Google. Please try again.");
       setLoading(false);
     }
   }
@@ -56,7 +56,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
           disabled={loading}
           className="mt-6 w-full rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-accent-hover disabled:opacity-40 disabled:hover:bg-accent"
         >
-          {loading ? "Conectando…" : "Continuar con Google"}
+          {loading ? "Connecting…" : "Continue with Google"}
         </button>
 
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}

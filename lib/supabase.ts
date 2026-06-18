@@ -9,7 +9,7 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!url || !serviceKey) {
   throw new Error(
-    "Faltan SUPABASE_URL y/o SUPABASE_SERVICE_ROLE_KEY. Configúralas en .env.local (local) y en Vercel (producción).",
+    "Missing SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY. Set them in .env.local (local) and in Vercel (production).",
   );
 }
 

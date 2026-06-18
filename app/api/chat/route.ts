@@ -23,28 +23,28 @@ const MAX_ROUNDS = 15;
 
 // Voz del PM (fuente de verdad: sección "Voz del PM" en DESIGN.md).
 // Arriba, las instrucciones de uso de tools; abajo, la voz de siempre.
-const SYSTEM_PROMPT = `Tienes herramientas reales para gestionar tareas. Úsalas siempre:
-- Cuando el usuario mencione trabajo a realizar → create_task de inmediato
-- Antes de dar recomendaciones sobre el proyecto → get_tasks primero
-- Cuando cambies prioridad o fecha → update_task, no solo lo menciones
-- Puedes encadenar múltiples tools en una respuesta si es necesario
-- En tu respuesta final confirma brevemente qué acciones ejecutaste
-- Cuando el usuario cree una tarea que parezca compleja o multifase, sugiere proactivamente dividirla en subtareas. Usa list_subtasks antes de hablar sobre los pasos de una tarea. Usa create_subtask cuando el usuario quiera desglosar el trabajo en pasos concretos.
+const SYSTEM_PROMPT = `You have real tools to manage tasks. Always use them:
+- When the user mentions work to be done → create_task right away
+- Before giving recommendations about the project → get_tasks first
+- When you change priority or date → update_task, don't just mention it
+- You can chain multiple tools in a single response if needed
+- In your final reply, briefly confirm which actions you took
+- When the user creates a task that looks complex or multi-phase, proactively suggest breaking it into subtasks. Use list_subtasks before talking about a task's steps. Use create_subtask when the user wants to break the work into concrete steps.
 
-Responde siempre en texto plano. Sin asteriscos, sin ##, sin ---, sin tablas con |. Escribe como si fuera un mensaje de WhatsApp entre colegas.
+Always reply in plain text. No asterisks, no ##, no ---, no tables with |. Write as if it were a WhatsApp message between colleagues.
 
-Eres el project manager (PM) personal de quien usa Pathfinder, un task manager
-ligero con IA para Data Scientists. Tu trabajo es acompañar, ordenar prioridades y mantener el ritmo.
+You are the personal project manager (PM) of whoever uses Pathfinder, a lightweight
+AI task manager for Data Scientists. Your job is to support them, sort out priorities and keep the momentum.
 
-Reglas de voz (tu respuesta las cumple SIEMPRE):
-- Habla como un buen coach humano, no como un sistema. Nunca menciones identificadores internos,
-  nombres de campos ni jerga de base de datos. Refiérete a las tareas por su texto en lenguaje natural.
-- Corto y con jugo: máximo 3 frases por respuesta en conversación normal. Cada frase aporta algo —
-  cero relleno, cero frases de cortesía vacías.
-- Concreto sobre abstracto: en vez de generalidades, di exactamente qué conviene hacer ahora.
-- Una sola pregunta por mensaje, máximo. Si no hace falta preguntar, no la fuerces.
-- Reconoce avances reales en una frase, sin inflar.
-- Español casual mexicano, tutea siempre.`;
+Voice rules (your reply ALWAYS follows them):
+- Talk like a good human coach, not like a system. Never mention internal identifiers,
+  field names or database jargon. Refer to tasks by their text in natural language.
+- Short and punchy: at most 3 sentences per reply in normal conversation. Every sentence adds something —
+  zero filler, zero empty courtesy phrases.
+- Concrete over abstract: instead of generalities, say exactly what's worth doing now.
+- One question per message, at most. If there's no need to ask, don't force it.
+- Acknowledge real progress in one sentence, without inflating it.
+- Reply in English by default; if the user writes in another language, match their language.`;
 
 // Definición de las tools. Los esquemas hablan en inglés/neutral; executeTool()
 // traduce a las columnas reales de Supabase (texto, prioridad, estado…).
@@ -52,17 +52,17 @@ const toolDefinitions: Anthropic.Tool[] = [
   {
     name: "create_task",
     description:
-      "Crea una nueva tarea en el proyecto actual. Úsala cuando el usuario mencione trabajo concreto a realizar o cuando identifiques pasos accionables claros.",
+      "Creates a new task in the current project. Use it when the user mentions concrete work to be done or when you identify clear actionable steps.",
     input_schema: {
       type: "object",
       properties: {
-        title: { type: "string", description: "Título claro y accionable de la tarea" },
+        title: { type: "string", description: "Clear, actionable task title" },
         priority: {
           type: "string",
           enum: ["alta", "media", "baja"],
-          description: "Prioridad de la tarea",
+          description: "Task priority",
         },
-        deadline: { type: "string", description: "Fecha límite en formato YYYY-MM-DD" },
+        deadline: { type: "string", description: "Deadline in YYYY-MM-DD format" },
       },
       required: ["title"],
     },
@@ -70,14 +70,14 @@ const toolDefinitions: Anthropic.Tool[] = [
   {
     name: "update_task",
     description:
-      "Actualiza campos de una tarea existente. Úsala para cambiar prioridad, deadline, título o estado. No describas el cambio en el chat sin ejecutar esta tool.",
+      "Updates fields of an existing task. Use it to change priority, deadline, title or status. Don't describe the change in the chat without running this tool.",
     input_schema: {
       type: "object",
       properties: {
-        task_id: { type: "string", description: "ID de la tarea a actualizar" },
+        task_id: { type: "string", description: "ID of the task to update" },
         title: { type: "string" },
         priority: { type: "string", enum: ["alta", "media", "baja"] },
-        deadline: { type: "string", description: "Formato YYYY-MM-DD" },
+        deadline: { type: "string", description: "YYYY-MM-DD format" },
         status: { type: "string", enum: ["pending", "in_progress", "done"] },
       },
       required: ["task_id"],
@@ -86,17 +86,17 @@ const toolDefinitions: Anthropic.Tool[] = [
   {
     name: "get_tasks",
     description:
-      "Obtiene las tareas actuales del proyecto con id, título, prioridad, deadline y estado. Úsala antes de dar recomendaciones para tener contexto real.",
+      "Gets the project's current tasks with id, title, priority, deadline and status. Use it before giving recommendations so you have real context.",
     input_schema: { type: "object", properties: {}, required: [] },
   },
   {
     name: "list_subtasks",
     description:
-      "Lista las subtareas (pasos) de una tarea existente, con su título y si están completadas. Úsala antes de hablar sobre los pasos o el avance de una tarea.",
+      "Lists the subtasks (steps) of an existing task, with their title and whether they're completed. Use it before talking about a task's steps or progress.",
     input_schema: {
       type: "object",
       properties: {
-        task_id: { type: "string", description: "ID de la tarea cuyas subtareas quieres listar" },
+        task_id: { type: "string", description: "ID of the task whose subtasks you want to list" },
       },
       required: ["task_id"],
     },
@@ -104,12 +104,12 @@ const toolDefinitions: Anthropic.Tool[] = [
   {
     name: "create_subtask",
     description:
-      "Crea una subtarea (paso concreto) dentro de una tarea existente. Úsala cuando el usuario quiera desglosar el trabajo de una tarea en pasos.",
+      "Creates a subtask (concrete step) inside an existing task. Use it when the user wants to break a task's work into steps.",
     input_schema: {
       type: "object",
       properties: {
-        task_id: { type: "string", description: "ID de la tarea a la que pertenece la subtarea" },
-        title: { type: "string", description: "Título claro y accionable de la subtarea" },
+        task_id: { type: "string", description: "ID of the task the subtask belongs to" },
+        title: { type: "string", description: "Clear, actionable subtask title" },
       },
       required: ["task_id", "title"],
     },
@@ -121,12 +121,12 @@ const toolDefinitions: Anthropic.Tool[] = [
 function buildContext(nombre: string, descripcion: string, tasks: Task[]): string {
   const tareas = tasks.length
     ? tasks
-        .map((t) => `- [${t.estado === "done" ? "hecha" : "pendiente"}] ${t.texto}`)
+        .map((t) => `- [${t.estado === "done" ? "done" : "pending"}] ${t.texto}`)
         .join("\n")
-    : "(todavía no hay tareas)";
-  return `\n\nContexto del proyecto en el que estás ahora (úsalo para responder sobre el trabajo real):
-Proyecto: ${nombre}${descripcion ? ` — ${descripcion}` : ""}
-Tareas:
+    : "(no tasks yet)";
+  return `\n\nContext for the project you're in right now (use it to answer about the real work):
+Project: ${nombre}${descripcion ? ` — ${descripcion}` : ""}
+Tasks:
 ${tareas}`;
 }
 
@@ -154,7 +154,7 @@ async function executeTool(
 ): Promise<unknown> {
   const args = (input ?? {}) as Record<string, unknown>;
   try {
-    if (!projectId) return { success: false, error: "No hay proyecto activo." };
+    if (!projectId) return { success: false, error: "No active project." };
 
     if (name === "get_tasks") {
       const tasks = await listTasks(projectId);
@@ -163,7 +163,7 @@ async function executeTool(
 
     if (name === "create_task") {
       const title = typeof args.title === "string" ? args.title.trim() : "";
-      if (!title) return { success: false, error: "title es requerido" };
+      if (!title) return { success: false, error: "title is required" };
       const prioridad = PRIORIDAD_ORDEN.includes(args.priority as Prioridad)
         ? (args.priority as Prioridad)
         : "media";
@@ -175,7 +175,7 @@ async function executeTool(
 
     if (name === "update_task") {
       const taskId = typeof args.task_id === "string" ? args.task_id : "";
-      if (!taskId) return { success: false, error: "task_id es requerido" };
+      if (!taskId) return { success: false, error: "task_id is required" };
       const patch: TaskPatch = {};
       if (typeof args.title === "string" && args.title.trim()) patch.texto = args.title.trim();
       if (PRIORIDAD_ORDEN.includes(args.priority as Prioridad)) {
@@ -188,14 +188,14 @@ async function executeTool(
       if (typeof args.status === "string") {
         patch.estado = (args.status === "done" ? "done" : "pending") as TaskState;
       }
-      if (Object.keys(patch).length === 0) return { success: false, error: "Nada que actualizar." };
+      if (Object.keys(patch).length === 0) return { success: false, error: "Nothing to update." };
       const task = await updateTask(taskId, patch);
       return { success: true, task: toToolTask(task) };
     }
 
     if (name === "list_subtasks") {
       const taskId = typeof args.task_id === "string" ? args.task_id : "";
-      if (!taskId) return { success: false, error: "task_id es requerido" };
+      if (!taskId) return { success: false, error: "task_id is required" };
       const subtasks = await listSubtasks(taskId);
       return {
         success: true,
@@ -210,9 +210,9 @@ async function executeTool(
 
     if (name === "create_subtask") {
       const taskId = typeof args.task_id === "string" ? args.task_id : "";
-      if (!taskId) return { success: false, error: "task_id es requerido" };
+      if (!taskId) return { success: false, error: "task_id is required" };
       const title = typeof args.title === "string" ? args.title.trim() : "";
-      if (!title) return { success: false, error: "title es requerido" };
+      if (!title) return { success: false, error: "title is required" };
       const subtask = await createSubtask(taskId, title);
       return {
         success: true,
@@ -225,9 +225,9 @@ async function executeTool(
       };
     }
 
-    return { success: false, error: `Tool desconocida: ${name}` };
+    return { success: false, error: `Unknown tool: ${name}` };
   } catch (e) {
-    return { success: false, error: e instanceof Error ? e.message : "error desconocido" };
+    return { success: false, error: e instanceof Error ? e.message : "unknown error" };
   }
 }
 
@@ -277,13 +277,13 @@ async function runAgenticLoop(
       .map((b) => b.text)
       .join("\n")
       .trim();
-    return { reply: text || "Listo.", toolsUsed };
+    return { reply: text || "Done.", toolsUsed };
   }
 
   // Se agotaron las rondas: muchas tools ya pudieron ejecutarse (las acciones
   // persistieron). En vez de un error genérico, lo decimos sin alarmar.
   return {
-    reply: "Hice lo que pude en este turno. Puedes pedirme continuar si falta algo.",
+    reply: "I did what I could this turn. Ask me to continue if something's still missing.",
     toolsUsed,
   };
 }
@@ -295,7 +295,7 @@ export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { error: "Falta ANTHROPIC_API_KEY. Copia .env.local.example a .env.local y pon tu key." },
+      { error: "Missing ANTHROPIC_API_KEY. Copy .env.local.example to .env.local and add your key." },
       { status: 500 },
     );
   }
@@ -304,7 +304,7 @@ export async function POST(req: Request) {
   const message: string = (body?.message ?? "").toString().trim();
   const projectId: string = (body?.projectId ?? "").toString();
   if (!message) {
-    return NextResponse.json({ error: "message requerido" }, { status: 400 });
+    return NextResponse.json({ error: "message is required" }, { status: 400 });
   }
 
   // Si el chat apunta a un proyecto, debe ser del usuario. (Sin projectId, el PM
@@ -316,7 +316,7 @@ export async function POST(req: Request) {
 
   // Carga proyecto, tareas e historial persistido para darle contexto al PM.
   // El historial es la fuente de verdad de Supabase, no estado del cliente.
-  let system = SYSTEM_PROMPT + `\n\nHoy es ${new Date().toISOString().slice(0, 10)}.`;
+  let system = SYSTEM_PROMPT + `\n\nToday is ${new Date().toISOString().slice(0, 10)}.`;
   let priorTurns: Anthropic.MessageParam[] = [];
   if (projectId) {
     const [project, tasks, prior] = await Promise.all([
@@ -350,7 +350,7 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ reply, toolsUsed });
   } catch (err) {
-    const detail = err instanceof Error ? err.message : "error desconocido";
-    return NextResponse.json({ error: `No pude hablar con Claude: ${detail}` }, { status: 502 });
+    const detail = err instanceof Error ? err.message : "unknown error";
+    return NextResponse.json({ error: `Couldn't reach Claude: ${detail}` }, { status: 502 });
   }
 }

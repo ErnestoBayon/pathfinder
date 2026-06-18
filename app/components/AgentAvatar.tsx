@@ -53,7 +53,7 @@ export default function AgentAvatar({
       style={{ width: size, height: size }}
       className="relative inline-block shrink-0"
       role="img"
-      aria-label="Avatar del agente PM"
+      aria-label="PM agent avatar"
     >
       <svg
         viewBox="0 0 100 100"

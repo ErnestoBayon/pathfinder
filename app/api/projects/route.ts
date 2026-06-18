@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const descripcion = (body?.descripcion ?? "").toString().trim();
 
   if (!nombre) {
-    return NextResponse.json({ error: "El nombre es requerido" }, { status: 400 });
+    return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
   try {
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";
     return NextResponse.json(
-      { error: `No se pudo crear el proyecto: ${detail}` },
+      { error: `Couldn't create the project: ${detail}` },
       { status: 500 },
     );
   }

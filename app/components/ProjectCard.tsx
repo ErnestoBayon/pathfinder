@@ -12,7 +12,7 @@ export default function ProjectCard({ project }: { project: Project }) {
         {project.nombre}
       </h3>
       <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-muted">
-        {project.descripcion || "Sin descripción"}
+        {project.descripcion || "No description"}
       </p>
     </Link>
   );

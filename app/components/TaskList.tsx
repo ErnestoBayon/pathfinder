@@ -27,14 +27,14 @@ const RANK = Object.fromEntries(PRIORIDAD_ORDEN.map((p, i) => [p, i])) as Record
 
 // Estilo del badge de prioridad: el color ilumina, no rellena (ver DESIGN.md).
 const PRIORIDAD_STYLE: Record<Prioridad, { label: string; color: string; bg: string }> = {
-  alta: { label: "Alta", color: "#dc2626", bg: "rgba(220,38,38,0.12)" },
-  media: { label: "Media", color: "#d97706", bg: "rgba(217,119,6,0.12)" },
-  baja: { label: "Baja", color: "#16a34a", bg: "rgba(22,163,74,0.12)" },
+  alta: { label: "High", color: "#dc2626", bg: "rgba(220,38,38,0.12)" },
+  media: { label: "Medium", color: "#d97706", bg: "rgba(217,119,6,0.12)" },
+  baja: { label: "Low", color: "#16a34a", bg: "rgba(22,163,74,0.12)" },
 };
 
 const STAR_COLOR = "#7c3aed";
 
-const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const MESES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 // "2026-06-15T00:00:00+00" → "15 jun". Trabaja sobre el string para evitar
 // corrimientos de zona horaria al construir un Date.
@@ -208,13 +208,13 @@ export default function TaskList({
       });
       const data = (await res.json()) as { task?: Task; error?: string };
       if (!res.ok || !data.task) {
-        setError(data.error ?? "No se pudo crear la tarea.");
+        setError(data.error ?? "Couldn't create the task.");
         return;
       }
       setTasks((prev) => [...prev, data.task!]);
       setTexto("");
     } catch {
-      setError("No pude conectar. Revisa tu conexión.");
+      setError("Couldn't connect. Check your connection.");
     } finally {
       setAdding(false);
     }
@@ -234,7 +234,7 @@ export default function TaskList({
       if (!res.ok) throw new Error();
     } catch {
       setTasks(prevTasks);
-      setError("No pude guardar el cambio. Intenta de nuevo.");
+      setError("Couldn't save the change. Please try again.");
     }
   }
 
@@ -282,7 +282,7 @@ export default function TaskList({
       if (!res.ok) throw new Error();
     } catch {
       setTasks(prevTasks);
-      setError("No pude eliminar la tarea. Intenta de nuevo.");
+      setError("Couldn't delete the task. Please try again.");
     }
   }
 
@@ -321,7 +321,7 @@ export default function TaskList({
       );
     } catch {
       setTasks(prevTasks);
-      setError("No pude guardar el nuevo orden. Intenta de nuevo.");
+      setError("Couldn't save the new order. Please try again.");
     }
   }
 
@@ -347,7 +347,7 @@ export default function TaskList({
                 ref={setActivatorNodeRef}
                 {...attributes}
                 {...listeners}
-                aria-label="Reordenar tarea"
+                aria-label="Reorder task"
                 className="shrink-0 cursor-grab touch-none select-none px-0.5 text-sm leading-none text-muted opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 active:cursor-grabbing"
               >
                 ⠿
@@ -356,7 +356,7 @@ export default function TaskList({
               <button
                 type="button"
                 onClick={() => toggle(task)}
-                aria-label={done ? "Marcar como pendiente" : "Marcar como hecha"}
+                aria-label={done ? "Mark as pending" : "Mark as done"}
                 className={[
                   "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs leading-none transition-colors duration-200 ease-out",
                   done ? "border-done bg-done text-white" : "border-line text-transparent hover:border-accent",
@@ -405,8 +405,8 @@ export default function TaskList({
               <button
                 type="button"
                 onClick={() => toggleClave(task)}
-                aria-label={task.es_clave ? "Quitar de tareas clave" : "Marcar como tarea clave"}
-                title="Tarea clave"
+                aria-label={task.es_clave ? "Remove from key tasks" : "Mark as key task"}
+                title="Key task"
                 style={{ color: STAR_COLOR }}
                 className={[
                   "flex shrink-0 items-center leading-none transition-opacity duration-200 ease-out",
@@ -424,7 +424,7 @@ export default function TaskList({
                   type="date"
                   value={task.deadline ? task.deadline.slice(0, 10) : ""}
                   onChange={(e) => setDeadline(task, e.target.value)}
-                  aria-label="Fecha límite"
+                  aria-label="Deadline"
                   className="absolute inset-0 z-10 w-full cursor-pointer opacity-0"
                 />
                 {task.deadline ? (
@@ -442,7 +442,7 @@ export default function TaskList({
               <select
                 value={task.prioridad}
                 onChange={(e) => setPrioridad(task, e.target.value as Prioridad)}
-                aria-label="Prioridad"
+                aria-label="Priority"
                 className="shrink-0 cursor-pointer appearance-none rounded-full px-2 py-0.5 text-[11px] font-medium leading-none outline-none"
                 style={{ color: st.color, backgroundColor: st.bg }}
               >
@@ -456,7 +456,7 @@ export default function TaskList({
               <button
                 type="button"
                 onClick={() => void remove(task)}
-                aria-label="Eliminar tarea"
+                aria-label="Delete task"
                 className="shrink-0 rounded-md px-1 text-base leading-none text-muted opacity-0 transition-opacity duration-200 ease-out hover:text-ink group-hover:opacity-100"
               >
                 ×
@@ -480,7 +480,7 @@ export default function TaskList({
                       className="inline-flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted transition-colors duration-200 ease-out hover:text-ink"
                     >
                       <span aria-hidden>{expanded ? "▾" : "▸"}</span>
-                      Agregar subtareas
+                      Add subtasks
                     </button>
                   );
                 }
@@ -491,7 +491,7 @@ export default function TaskList({
                     type="button"
                     onClick={() => toggleSubtasks(task.id)}
                     aria-expanded={expanded}
-                    aria-label={`Subtareas: ${completed} de ${total} completadas`}
+                    aria-label={`Subtasks: ${completed} of ${total} completed`}
                     className={[
                       "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium leading-none transition-colors duration-200 ease-out",
                       subtaskPillClasses(total, completed),
@@ -524,9 +524,9 @@ export default function TaskList({
   return (
     <div className="flex flex-col p-6">
       <div className={totalTasks > 0 ? "flex items-baseline justify-between" : "mb-4 flex items-baseline justify-between"}>
-        <h2 className="text-sm font-semibold text-ink">Tareas</h2>
+        <h2 className="text-sm font-semibold text-ink">Tasks</h2>
         <span className="text-xs text-muted">
-          {pendientes} {pendientes === 1 ? "pendiente" : "pendientes"}
+          {pendientes} {pendientes === 1 ? "pending" : "pending"}
         </span>
       </div>
 
@@ -534,7 +534,7 @@ export default function TaskList({
       {totalTasks > 0 && (
         <div className="mb-2 flex items-center gap-2 py-2">
           <span className="shrink-0 text-xs tabular-nums text-muted">
-            {doneTasks} / {totalTasks} tareas
+            {doneTasks} / {totalTasks} tasks
           </span>
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
             <div
@@ -550,7 +550,7 @@ export default function TaskList({
 
       {ordered.length === 0 ? (
         <p className="mb-4 text-sm text-muted">
-          Aún no hay tareas. Agrega la primera abajo.
+          No tasks yet. Add the first one below.
         </p>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -578,7 +578,7 @@ export default function TaskList({
         <input
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          placeholder="Agregar una tarea…"
+          placeholder="Add a task…"
           disabled={adding}
           className="flex-1 rounded-full border border-line bg-surface px-5 py-3 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-muted focus:border-accent"
         />
@@ -587,7 +587,7 @@ export default function TaskList({
           disabled={adding || texto.trim() === ""}
           className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-accent-hover disabled:opacity-40 disabled:hover:bg-accent"
         >
-          {adding ? "…" : "Agregar"}
+          {adding ? "…" : "Add"}
         </button>
       </form>
 

@@ -45,7 +45,7 @@ export async function createProject(nombre: string, descripcion: string): Promis
   const {
     data: { user },
   } = await db.auth.getUser();
-  if (!user) throw new Error("No hay sesión activa.");
+  if (!user) throw new Error("No active session.");
   const id = `proj-${crypto.randomUUID()}`;
   const { data, error } = await db
     .from("projects")

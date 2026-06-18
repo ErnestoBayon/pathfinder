@@ -39,12 +39,12 @@ export default function NewProjectModal({
       });
       const data = (await res.json()) as { project?: Project; error?: string };
       if (!res.ok || !data.project) {
-        setError(data.error ?? "No se pudo crear el proyecto.");
+        setError(data.error ?? "Couldn't create the project.");
         return;
       }
       onCreated(data.project);
     } catch {
-      setError("No pude conectar. Revisa tu conexión.");
+      setError("Couldn't connect. Check your connection.");
     } finally {
       setSaving(false);
     }
@@ -63,19 +63,19 @@ export default function NewProjectModal({
       {/* Card del modal */}
       <div className="relative w-full max-w-md rounded-2xl border border-line bg-surface p-6 shadow-note-hover">
         <h2 id="new-project-title" className="text-lg font-semibold tracking-tight text-ink">
-          Nuevo proyecto
+          New project
         </h2>
 
         <form onSubmit={submit} className="mt-5 flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="np-nombre" className="text-sm font-medium text-ink">
-              Nombre <span className="text-accent">*</span>
+              Name <span className="text-accent">*</span>
             </label>
             <input
               id="np-nombre"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              placeholder="Mi nuevo proyecto"
+              placeholder="My new project"
               autoFocus
               required
               className="rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-muted focus:border-accent"
@@ -84,13 +84,13 @@ export default function NewProjectModal({
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="np-desc" className="text-sm font-medium text-ink">
-              Descripción <span className="text-muted">(opcional)</span>
+              Description <span className="text-muted">(optional)</span>
             </label>
             <textarea
               id="np-desc"
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              placeholder="¿De qué trata este proyecto?"
+              placeholder="What is this project about?"
               rows={3}
               className="resize-none rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-muted focus:border-accent"
             />
@@ -104,14 +104,14 @@ export default function NewProjectModal({
               onClick={onClose}
               className="rounded-lg px-4 py-2.5 text-sm font-medium text-muted transition-colors duration-200 ease-out hover:text-ink"
             >
-              Cancelar
+              Cancel
             </button>
             <button
               type="submit"
               disabled={!nombre.trim() || saving}
               className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-accent-hover disabled:opacity-40 disabled:hover:bg-accent"
             >
-              {saving ? "Creando…" : "Crear"}
+              {saving ? "Creating…" : "Create"}
             </button>
           </div>
         </form>

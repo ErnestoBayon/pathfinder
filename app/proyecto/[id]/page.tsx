@@ -26,7 +26,7 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
             href="/home"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors duration-200 ease-out hover:text-ink"
           >
-            <span aria-hidden>←</span> Proyectos
+            <span aria-hidden>←</span> Projects
           </Link>
         </div>
       </nav>
