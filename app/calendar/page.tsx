@@ -37,6 +37,7 @@ export default async function CalendarPage() {
         projectId: p.id,
         projectName: p.nombre,
         date,
+        completed: t.estado === "done",
       });
     }
   });
