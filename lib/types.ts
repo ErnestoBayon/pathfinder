@@ -1,7 +1,7 @@
 // Tipos del dominio v2: proyectos y tareas. Sin gamificación (ni niveles, ni quests, ni XP).
 // Reflejan las columnas reales de Supabase (tablas `projects`, `tasks`, `activity_log`).
 
-export type TaskState = "pending" | "done";
+export type TaskState = "todo" | "doing" | "done";
 
 export type Prioridad = "High" | "Medium" | "Low";
 
@@ -13,6 +13,8 @@ export interface Project {
   id: string;
   nombre: string;
   descripcion: string;
+  /** Color de acento del proyecto (hex). Se usa en la card y su detalle. */
+  color?: string;
   created_at?: string;
 }
 
@@ -28,6 +30,8 @@ export interface Task {
   orden: number;
   /** Tarea clave/bloqueante: se marca con ⭐ y siempre queda visible. */
   es_clave: boolean;
+  /** Tarea sugerida por la IA, aún no confirmada por el usuario. */
+  suggested?: boolean;
   deadline?: string | null;
   created_at?: string;
 }

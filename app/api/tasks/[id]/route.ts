@@ -18,8 +18,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const patch: TaskPatch = {};
 
   if (body?.estado !== undefined) {
-    if (body.estado !== "pending" && body.estado !== "done") {
-      return NextResponse.json({ error: 'estado must be "pending" or "done"' }, { status: 400 });
+    if (body.estado !== "todo" && body.estado !== "doing" && body.estado !== "done") {
+      return NextResponse.json(
+        { error: 'estado must be "todo", "doing" or "done"' },
+        { status: 400 },
+      );
     }
     patch.estado = body.estado;
   }
