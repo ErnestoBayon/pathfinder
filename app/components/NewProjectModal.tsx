@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Project } from "@/lib/types";
-
-// Paleta de acentos para el proyecto (el primero es el default).
-const COLORS = ["#5B5BD6", "#0E9F6E", "#D97706", "#7C5CFC", "#E11D48", "#0891B2"];
+import { PROJECT_COLORS } from "@/lib/colors";
 
 export default function NewProjectModal({
   onClose,
@@ -15,7 +13,7 @@ export default function NewProjectModal({
 }) {
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
-  const [color, setColor] = useState<string>(COLORS[0]);
+  const [color, setColor] = useState<string>(PROJECT_COLORS[0]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,7 +101,7 @@ export default function NewProjectModal({
           <div className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-ink">Color</span>
             <div className="flex items-center gap-2.5">
-              {COLORS.map((c) => (
+              {PROJECT_COLORS.map((c) => (
                 <button
                   key={c}
                   type="button"

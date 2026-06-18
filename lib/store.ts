@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { createClient } from "./supabase/server";
+import { DEFAULT_PROJECT_COLOR } from "./colors";
 import { PRIORIDAD_ORDEN } from "./types";
 import type { ChatRole, Message, Prioridad, Project, Subtask, Task, TaskState } from "./types";
 
@@ -43,7 +44,7 @@ export async function listProjects(): Promise<Project[]> {
 export async function createProject(
   nombre: string,
   descripcion: string,
-  color: string = "#5B5BD6",
+  color: string = DEFAULT_PROJECT_COLOR,
 ): Promise<Project> {
   const db = createClient();
   const {
@@ -70,6 +71,27 @@ export async function getProject(id: string): Promise<Project | null> {
     .maybeSingle();
   if (error) throw new Error(error.message);
   return (data as Project | null) ?? null;
+}
+
+/** Campos editables de un proyecto. Todos opcionales: solo se actualiza lo que venga. */
+export interface ProjectPatch {
+  nombre?: string;
+  descripcion?: string;
+  color?: string;
+}
+
+/** Aplica un patch parcial a un proyecto y devuelve el proyecto actualizado.
+ *  RLS limita la fila al dueño; el `.eq("id", id)` apunta a la fila concreta. */
+export async function updateProject(id: string, patch: ProjectPatch): Promise<Project> {
+  const db = createClient();
+  const { data, error } = await db
+    .from("projects")
+    .update(patch)
+    .eq("id", id)
+    .select("id, nombre, descripcion, color, created_at")
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Project;
 }
 
 /** Lista las tareas de un proyecto, ya ordenadas por prioridad y `orden`. */
