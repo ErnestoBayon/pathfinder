@@ -26,6 +26,8 @@ export default function ChatBox({
   );
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  // Onboarding hint: solo se muestra en chat vacío y mientras no se descarte (sesión, sin persistir).
+  const [hintDismissed, setHintDismissed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   function scrollToBottom() {
@@ -83,6 +85,38 @@ export default function ChatBox({
         <AgentAvatar color="#4F46E5" state={sending ? "thinking" : "active"} size={40} />
         <h2 className="text-sm font-semibold text-ink">Your PM</h2>
       </div>
+
+      {/* Onboarding estático: cómo usar al PM. Solo en chat vacío, descartable por sesión. */}
+      {messages.length === 0 && !hintDismissed && (
+        <div className="relative mb-4 rounded-xl border border-indigo-100 bg-indigo-50 p-4">
+          <button
+            type="button"
+            onClick={() => setHintDismissed(true)}
+            aria-label="Dismiss tips"
+            className="absolute right-2.5 top-2.5 text-indigo-300 transition-colors duration-200 ease-out hover:text-indigo-500"
+          >
+            ✕
+          </button>
+          <h3 className="pr-6 text-sm font-semibold text-indigo-900">
+            AI PM · How to use your copilot
+          </h3>
+          <p className="mt-1 text-xs text-indigo-400">Try asking:</p>
+          <ul className="mt-2.5 flex flex-col gap-1.5">
+            {[
+              "What tasks do I have pending?",
+              "Create a task for data cleaning due next Friday",
+              "Break this task into subtasks",
+              "Mark the model evaluation task as done",
+            ].map((example) => (
+              <li key={example}>
+                <span className="inline-block rounded-full bg-white/70 px-3 py-1 text-xs text-indigo-700 ring-1 ring-indigo-100">
+                  {example}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div ref={scrollRef} className="no-scrollbar mb-4 flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto">
         {messages.length === 0 ? (
