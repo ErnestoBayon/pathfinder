@@ -7,16 +7,21 @@ import { PROJECT_COLORS, DEFAULT_PROJECT_COLOR } from "@/lib/colors";
 
 /** Card de proyecto: barra de acento a la izquierda con el color del proyecto.
  *  Lleva a /proyecto/[id]. Un punto de color arriba a la derecha abre un popover
- *  para recolorear el proyecto sin salir del Home. La barra de progreso es
- *  placeholder (0% por ahora). */
+ *  para recolorear el proyecto sin salir del Home. La barra de progreso refleja
+ *  las tareas completadas (done/total) del proyecto. */
 export default function ProjectCard({
   project,
+  taskCount,
   onColorChange,
 }: {
   project: Project;
+  taskCount?: { done: number; total: number };
   onColorChange?: (id: string, color: string) => void;
 }) {
   const color = project.color ?? DEFAULT_PROJECT_COLOR;
+  const done = taskCount?.done ?? 0;
+  const total = taskCount?.total ?? 0;
+  const pct = total > 0 ? (done / total) * 100 : 0;
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -80,9 +85,9 @@ export default function ProjectCard({
         {project.descripcion || "No description"}
       </p>
 
-      {/* Barra de progreso (placeholder: 0% por ahora). */}
+      {/* Barra de progreso: tareas completadas / total del proyecto. */}
       <div className="mt-3 h-[5px] w-full overflow-hidden rounded bg-[#EFEFF3]">
-        <div className="h-full rounded" style={{ width: 0, backgroundColor: color }} />
+        <div className="h-full rounded" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
 
       <span className="mt-3 text-[13px] font-medium" style={{ color }}>
