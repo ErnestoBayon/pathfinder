@@ -6,7 +6,13 @@ import ProjectCard from "./ProjectCard";
 import NewProjectCard from "./NewProjectCard";
 import NewProjectModal from "./NewProjectModal";
 
-export default function HomeProjects({ initialProjects }: { initialProjects: Project[] }) {
+export default function HomeProjects({
+  initialProjects,
+  taskCounts,
+}: {
+  initialProjects: Project[];
+  taskCounts: Record<string, { done: number; total: number }>;
+}) {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -39,7 +45,12 @@ export default function HomeProjects({ initialProjects }: { initialProjects: Pro
       ) : (
         <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
-            <ProjectCard key={p.id} project={p} onColorChange={handleColorChange} />
+            <ProjectCard
+              key={p.id}
+              project={p}
+              taskCount={taskCounts[p.id]}
+              onColorChange={handleColorChange}
+            />
           ))}
           <NewProjectCard onClick={() => setModalOpen(true)} />
         </div>

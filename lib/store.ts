@@ -94,6 +94,30 @@ export async function updateProject(id: string, patch: ProjectPatch): Promise<Pr
   return data as Project;
 }
 
+/**
+ * Cuenta total y completadas (estado 'done') de tareas para varios proyectos en
+ * un solo SELECT (sin N+1). Devuelve un mapa project_id → { done, total };
+ * proyectos sin tareas no aparecen (el caller asume 0/0).
+ */
+export async function getProjectTaskCounts(
+  projectIds: string[],
+): Promise<Record<string, { done: number; total: number }>> {
+  if (projectIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("project_id, estado")
+    .in("project_id", projectIds);
+  if (error) throw new Error(error.message);
+
+  const counts: Record<string, { done: number; total: number }> = {};
+  for (const row of (data ?? []) as { project_id: string; estado: TaskState }[]) {
+    const c = (counts[row.project_id] ??= { done: 0, total: 0 });
+    c.total += 1;
+    if (row.estado === "done") c.done += 1;
+  }
+  return counts;
+}
+
 /** Lista las tareas de un proyecto, ya ordenadas por prioridad y `orden`. */
 export async function listTasks(projectId: string): Promise<Task[]> {
   const { data, error } = await supabase
