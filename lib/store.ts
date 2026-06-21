@@ -159,6 +159,7 @@ export interface TaskPatch {
   deadline?: string | null;
   orden?: number;
   es_clave?: boolean;
+  suggested?: boolean;
 }
 
 /** Aplica un patch parcial a una tarea y devuelve la tarea actualizada. */

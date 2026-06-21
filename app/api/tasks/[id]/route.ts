@@ -66,6 +66,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     patch.es_clave = body.es_clave;
   }
 
+  // Aprobar una sugerencia de la IA = pasar suggested a false (deja de ser sugerida).
+  if (body?.suggested !== undefined) {
+    if (typeof body.suggested !== "boolean") {
+      return NextResponse.json({ error: "suggested must be a boolean" }, { status: 400 });
+    }
+    patch.suggested = body.suggested;
+  }
+
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
