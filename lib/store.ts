@@ -152,6 +152,18 @@ export async function createTask(
   return data as Task;
 }
 
+/**
+ * Crea una tarea sugerida por la IA (suggested=true, fijado por la función, no
+ * por el modelo) para que el usuario la apruebe o rechace en el panel.
+ */
+export async function createSuggestedTask(
+  projectId: string,
+  texto: string,
+  opts: { prioridad?: Prioridad; deadline?: string | null } = {},
+): Promise<Task> {
+  return createTask(projectId, texto, { ...opts, suggested: true });
+}
+
 /** Campos editables de una tarea. Todos opcionales: solo se actualiza lo que venga. */
 export interface TaskPatch {
   texto?: string;
