@@ -132,7 +132,7 @@ export async function listTasks(projectId: string): Promise<Task[]> {
 export async function createTask(
   projectId: string,
   texto: string,
-  opts: { prioridad?: Prioridad; deadline?: string | null } = {},
+  opts: { prioridad?: Prioridad; deadline?: string | null; suggested?: boolean } = {},
 ): Promise<Task> {
   const id = `task-${crypto.randomUUID()}`;
   const { data, error } = await supabase
@@ -144,6 +144,7 @@ export async function createTask(
       estado: "todo",
       prioridad: opts.prioridad ?? "Medium",
       deadline: opts.deadline ?? null,
+      suggested: opts.suggested ?? false,
     })
     .select(TASK_COLS)
     .single();

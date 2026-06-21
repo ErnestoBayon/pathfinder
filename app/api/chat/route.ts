@@ -30,6 +30,7 @@ const SYSTEM_PROMPT = `You have real tools to manage tasks. Always use them:
 - You can chain multiple tools in a single response if needed
 - In your final reply, briefly confirm which actions you took
 - When the user creates a task that looks complex or multi-phase, proactively suggest breaking it into subtasks. Use list_subtasks before talking about a task's steps. Use create_subtask when the user wants to break the work into concrete steps.
+- When you proactively recommend or plan tasks without the user explicitly requesting a specific task, create them with suggested: true so the user can review and approve them. When the user directly asks you to create a task ('add a task for X', 'create a task to do Y'), use suggested: false so it goes straight to their task list.
 
 Always reply in plain text. No asterisks, no ##, no ---, no tables with |. Write as if it were a WhatsApp message between colleagues.
 
@@ -52,7 +53,7 @@ const toolDefinitions: Anthropic.Tool[] = [
   {
     name: "create_task",
     description:
-      "Creates a new task in the current project. Use it when the user mentions concrete work to be done or when you identify clear actionable steps.",
+      "Creates a new task in the current project. Use it when the user mentions concrete work to be done or when you identify clear actionable steps. Set the suggested flag when you are proactively recommending the task rather than fulfilling a direct request.",
     input_schema: {
       type: "object",
       properties: {
@@ -63,6 +64,11 @@ const toolDefinitions: Anthropic.Tool[] = [
           description: "Task priority",
         },
         deadline: { type: "string", description: "Deadline in YYYY-MM-DD format" },
+        suggested: {
+          type: "boolean",
+          description:
+            "Set to true when the PM is proactively recommending a task. Set to false (or omit) when the user explicitly asked to create it.",
+        },
       },
       required: ["title"],
     },
@@ -169,7 +175,8 @@ async function executeTool(
         : "Medium";
       const deadline =
         typeof args.deadline === "string" && DATE_RE.test(args.deadline) ? args.deadline : null;
-      const task = await createTask(projectId, title, { prioridad, deadline });
+      const suggested = args.suggested === true;
+      const task = await createTask(projectId, title, { prioridad, deadline, suggested });
       return { success: true, task: toToolTask(task) };
     }
 
