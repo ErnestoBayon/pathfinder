@@ -12,7 +12,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   try {
-    const tasks = await listTasks(params.id);
+    // Las tareas sugeridas por la IA viven en su propio panel (approve/reject),
+    // no en el listado principal; las excluimos del refetch del cliente.
+    const tasks = (await listTasks(params.id)).filter((t) => !t.suggested);
     return NextResponse.json({ tasks });
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";

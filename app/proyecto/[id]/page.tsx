@@ -11,7 +11,11 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
   const project = await getProject(params.id).catch(() => null);
   if (!project) notFound();
 
-  const tasks = await listTasks(params.id).catch(() => []);
+  // Una sola lectura: separamos las tareas regulares (listado) de las sugeridas
+  // por la IA (panel de approve/reject arriba del listado).
+  const allTasks = await listTasks(params.id).catch(() => []);
+  const tasks = allTasks.filter((t) => !t.suggested);
+  const suggested = allTasks.filter((t) => t.suggested);
   const messages = await loadMessages(params.id).catch(() => []);
   const deadlineDates = tasks.filter((t) => t.deadline).map((t) => t.deadline!.slice(0, 10));
   // Counts de subtareas (una sola query) para pintar los pills desde el primer render.
@@ -47,6 +51,7 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
         <ProjectWorkspace
           projectId={project.id}
           initialTasks={tasks}
+          initialSuggested={suggested}
           initialMessages={messages}
           initialSubtaskCounts={subtaskCounts}
           calendar={<MiniCalendar deadlineDates={deadlineDates} projectId={project.id} />}
