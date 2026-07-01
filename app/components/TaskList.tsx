@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   DndContext,
   KeyboardSensor,
@@ -21,6 +22,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { PRIORIDAD_ORDEN } from "@/lib/types";
 import type { Prioridad, Task } from "@/lib/types";
 import SubtaskList from "./SubtaskList";
+import TaskFilterBar, { DEFAULT_SORT, type SortKey } from "./TaskFilterBar";
 
 // Rank para ordenar en cliente (debe espejar el orden del store).
 const RANK = Object.fromEntries(PRIORIDAD_ORDEN.map((p, i) => [p, i])) as Record<Prioridad, number>;
@@ -51,6 +53,46 @@ function sortForDisplay(tasks: Task[]): Task[] {
       a.orden - b.orden ||
       (a.created_at ?? "").localeCompare(b.created_at ?? ""),
   );
+}
+
+// ── Filtro/orden en cliente ────────────────────────────────────────────────
+// Lee/valida los query params contra los valores REALES del dominio; cualquier
+// valor desconocido se ignora (la URL es editable a mano / compartible).
+const VALID_PRIORIDADES = new Set<Prioridad>(PRIORIDAD_ORDEN);
+
+function parsePrioridades(raw: string | null): Set<Prioridad> {
+  const set = new Set<Prioridad>();
+  if (!raw) return set;
+  for (const part of raw.split(",")) {
+    const v = part.trim() as Prioridad;
+    if (VALID_PRIORIDADES.has(v)) set.add(v);
+  }
+  return set;
+}
+
+function parseSort(raw: string | null): SortKey {
+  return raw === "deadline" || raw === "created" ? raw : DEFAULT_SORT;
+}
+
+// Ordena la lista ya filtrada según la clave elegida. Las fechas son strings ISO,
+// así que localeCompare las ordena cronológicamente sin construir Date.
+function applySort(list: Task[], sort: SortKey): Task[] {
+  if (sort === "deadline") {
+    // Deadline ascendente (más próximo primero); sin deadline al final.
+    return [...list].sort((a, b) => {
+      const ad = a.deadline ?? "";
+      const bd = b.deadline ?? "";
+      if (!ad && !bd) return (a.created_at ?? "").localeCompare(b.created_at ?? "");
+      if (!ad) return 1;
+      if (!bd) return -1;
+      return ad.localeCompare(bd);
+    });
+  }
+  if (sort === "created") {
+    // Más reciente primero (created_at descendente).
+    return [...list].sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+  }
+  return sortForDisplay(list);
 }
 
 function CalendarIcon() {
@@ -169,6 +211,64 @@ export default function TaskList({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  // Estado de filtro/orden: la URL es la única fuente de verdad (vistas compartibles
+  // y persistentes al refrescar). No toca el store ni dispara queries.
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const selectedPrios = useMemo(
+    () => parsePrioridades(searchParams.get("prioridad")),
+    [searchParams],
+  );
+  const sort = parseSort(searchParams.get("sort"));
+  const keystonesOnly = searchParams.get("keystones") === "1";
+  const filtersActive = selectedPrios.size > 0 || keystonesOnly;
+
+  // Reescribe los query params conservando los que no gestionamos aquí.
+  const updateQuery = useCallback(
+    (mutate: (params: URLSearchParams) => void) => {
+      const params = new URLSearchParams(searchParams.toString());
+      mutate(params);
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [searchParams, pathname, router],
+  );
+
+  function togglePrioridad(p: Prioridad) {
+    updateQuery((params) => {
+      const next = new Set(selectedPrios);
+      if (next.has(p)) next.delete(p);
+      else next.add(p);
+      // Serializamos en el orden canónico para que la URL sea estable/legible.
+      if (next.size === 0) params.delete("prioridad");
+      else params.set("prioridad", PRIORIDAD_ORDEN.filter((x) => next.has(x)).join(","));
+    });
+  }
+
+  function changeSort(next: SortKey) {
+    updateQuery((params) => {
+      if (next === DEFAULT_SORT) params.delete("sort");
+      else params.set("sort", next);
+    });
+  }
+
+  function toggleKeystones() {
+    updateQuery((params) => {
+      if (keystonesOnly) params.delete("keystones");
+      else params.set("keystones", "1");
+    });
+  }
+
+  function clearFilters() {
+    updateQuery((params) => {
+      params.delete("prioridad");
+      params.delete("keystones");
+      params.delete("sort");
+    });
+  }
 
   // Re-lee las tareas cuando el padre incrementa la versión (p. ej. el chat creó
   // o reorganizó tareas). Saltamos el primer render: initialTasks ya viene del SSR.
@@ -326,7 +426,20 @@ export default function TaskList({
   }
 
   const pendientes = tasks.filter((t) => t.estado !== "done").length;
-  const ordered = sortForDisplay(tasks);
+
+  // Filtro cliente sobre lo ya cargado: prioridades seleccionadas (multi) + keystones.
+  const filtered = useMemo(() => {
+    let v = tasks;
+    if (selectedPrios.size > 0) v = v.filter((t) => selectedPrios.has(t.prioridad));
+    if (keystonesOnly) v = v.filter((t) => t.es_clave);
+    return v;
+  }, [tasks, selectedPrios, keystonesOnly]);
+  const ordered = useMemo(() => applySort(filtered, sort), [filtered, sort]);
+
+  // Drag & drop reordena dentro de una prioridad escribiendo `orden`; eso solo es
+  // coherente en la vista por defecto (prioridad, sin filtros). Con filtros o con
+  // otro orden mostramos una lista plana no arrastrable — ver nota en el commit.
+  const dndEnabled = sort === "prioridad" && !filtersActive;
 
   // Progreso del proyecto (tareas hechas / total) para la barra de la cabecera.
   const totalTasks = tasks.length;
@@ -334,24 +447,36 @@ export default function TaskList({
   const taskPct = totalTasks > 0 ? (doneTasks / totalTasks) * 100 : 0;
   const allTasksDone = totalTasks > 0 && doneTasks === totalTasks;
 
-  function renderTask(task: Task) {
+  // Fila de tarea. `s` trae los refs/listeners de dnd-kit cuando el drag está activo;
+  // si es null (vista filtrada u orden no-prioridad) la fila es estática, sin manija.
+  function renderTaskRow(task: Task, drag: SortableRenderProps | null) {
     const done = task.estado === "done";
     const editing = editingId === task.id;
     const st = PRIORIDAD_STYLE[task.prioridad];
     return (
-      <Sortable key={task.id} id={task.id}>
-        {({ setNodeRef, setActivatorNodeRef, attributes, listeners, style, isDragging }) => (
-          <li ref={setNodeRef} style={style} className={isDragging ? "relative z-10 opacity-70" : ""}>
+          <li
+            key={task.id}
+            ref={drag?.setNodeRef}
+            style={drag?.style}
+            className={drag?.isDragging ? "relative z-10 opacity-70" : ""}
+          >
             <div className="group flex h-auto items-start gap-1.5 rounded-lg px-1 py-2 transition-colors duration-200 ease-out hover:bg-canvas">
-              <span
-                ref={setActivatorNodeRef}
-                {...attributes}
-                {...listeners}
-                aria-label="Reorder task"
-                className="shrink-0 cursor-grab touch-none select-none px-0.5 text-sm leading-none text-muted opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 active:cursor-grabbing"
-              >
-                ⠿
-              </span>
+              {drag ? (
+                <span
+                  ref={drag.setActivatorNodeRef}
+                  {...drag.attributes}
+                  {...drag.listeners}
+                  aria-label="Reorder task"
+                  className="shrink-0 cursor-grab touch-none select-none px-0.5 text-sm leading-none text-muted opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 active:cursor-grabbing"
+                >
+                  ⠿
+                </span>
+              ) : (
+                // Espaciador invisible: conserva la alineación de la fila sin manija.
+                <span className="shrink-0 select-none px-0.5 text-sm leading-none opacity-0" aria-hidden>
+                  ⠿
+                </span>
+              )}
 
               <button
                 type="button"
@@ -510,13 +635,20 @@ export default function TaskList({
               {showSubtasks[task.id] && (
                 <SubtaskList
                   taskId={task.id}
-                  onSummaryChange={(s) => setSummary(task.id, s)}
+                  onSummaryChange={(summary) => setSummary(task.id, summary)}
                   onTaskCompleted={() => markTaskDoneLocal(task.id)}
                 />
               )}
             </div>
           </li>
-        )}
+    );
+  }
+
+  // Envoltorio sortable: aísla useSortable y pasa sus refs/listeners a la fila.
+  function renderTask(task: Task) {
+    return (
+      <Sortable key={task.id} id={task.id}>
+        {(drag) => renderTaskRow(task, drag)}
       </Sortable>
     );
   }
@@ -548,30 +680,62 @@ export default function TaskList({
         </div>
       )}
 
-      {ordered.length === 0 ? (
+      {totalTasks === 0 ? (
         <p className="mb-4 text-sm text-muted">
           No tasks yet. Add the first one below.
         </p>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <ul className="mb-4 flex flex-col gap-1.5">
-            {/* Un SortableContext por prioridad: dnd-kit solo resuelve el `over`
-                dentro del mismo grupo, así el guard de prioridad nunca aborta un drop válido. */}
-            {PRIORIDAD_ORDEN.map((prioridad) => {
-              const group = ordered.filter((t) => t.prioridad === prioridad);
-              if (group.length === 0) return null;
-              return (
-                <SortableContext
-                  key={prioridad}
-                  items={group.map((t) => t.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {group.map((task) => renderTask(task))}
-                </SortableContext>
-              );
-            })}
-          </ul>
-        </DndContext>
+        <>
+          <TaskFilterBar
+            selected={selectedPrios}
+            onTogglePrioridad={togglePrioridad}
+            sort={sort}
+            onSortChange={changeSort}
+            keystonesOnly={keystonesOnly}
+            onToggleKeystones={toggleKeystones}
+            active={filtersActive || sort !== DEFAULT_SORT}
+            onClear={clearFilters}
+          />
+
+          {ordered.length === 0 ? (
+            // Filtros que no matchean ninguna tarea (nunca cuando totalTasks === 0).
+            <div className="mb-4 rounded-lg border border-line bg-canvas px-4 py-6 text-center">
+              <p className="text-sm text-muted">No tasks match these filters.</p>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="mt-2 text-xs font-medium text-accent transition-colors duration-200 ease-out hover:underline"
+              >
+                Clear filters
+              </button>
+            </div>
+          ) : dndEnabled ? (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+              <ul className="mb-4 flex flex-col gap-1.5">
+                {/* Un SortableContext por prioridad: dnd-kit solo resuelve el `over`
+                    dentro del mismo grupo, así el guard de prioridad nunca aborta un drop válido. */}
+                {PRIORIDAD_ORDEN.map((prioridad) => {
+                  const group = ordered.filter((t) => t.prioridad === prioridad);
+                  if (group.length === 0) return null;
+                  return (
+                    <SortableContext
+                      key={prioridad}
+                      items={group.map((t) => t.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {group.map((task) => renderTask(task))}
+                    </SortableContext>
+                  );
+                })}
+              </ul>
+            </DndContext>
+          ) : (
+            // Vista filtrada u orden no-prioridad: lista plana, sin drag & drop.
+            <ul className="mb-4 flex flex-col gap-1.5">
+              {ordered.map((task) => renderTaskRow(task, null))}
+            </ul>
+          )}
+        </>
       )}
 
       <form onSubmit={add} className="flex items-center gap-2.5">
