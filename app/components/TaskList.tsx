@@ -21,20 +21,12 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { PRIORIDAD_ORDEN } from "@/lib/types";
 import type { Prioridad, Task } from "@/lib/types";
+import { KEYSTONE_COLOR, PRIORIDAD_COLORS } from "@/lib/colors";
 import SubtaskList from "./SubtaskList";
 import TaskFilterBar, { DEFAULT_SORT, type SortKey } from "./TaskFilterBar";
 
 // Rank para ordenar en cliente (debe espejar el orden del store).
 const RANK = Object.fromEntries(PRIORIDAD_ORDEN.map((p, i) => [p, i])) as Record<Prioridad, number>;
-
-// Estilo del badge de prioridad: el color ilumina, no rellena (ver DESIGN.md).
-const PRIORIDAD_STYLE: Record<Prioridad, { label: string; color: string; bg: string }> = {
-  High: { label: "High", color: "#dc2626", bg: "rgba(220,38,38,0.12)" },
-  Medium: { label: "Medium", color: "#d97706", bg: "rgba(217,119,6,0.12)" },
-  Low: { label: "Low", color: "#16a34a", bg: "rgba(22,163,74,0.12)" },
-};
-
-const STAR_COLOR = "#7c3aed";
 
 const MESES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -452,7 +444,7 @@ export default function TaskList({
   function renderTaskRow(task: Task, drag: SortableRenderProps | null) {
     const done = task.estado === "done";
     const editing = editingId === task.id;
-    const st = PRIORIDAD_STYLE[task.prioridad];
+    const st = PRIORIDAD_COLORS[task.prioridad];
     return (
           <li
             key={task.id}
@@ -532,7 +524,7 @@ export default function TaskList({
                 onClick={() => toggleClave(task)}
                 aria-label={task.es_clave ? "Remove from key tasks" : "Mark as key task"}
                 title="Key task"
-                style={{ color: STAR_COLOR }}
+                style={{ color: KEYSTONE_COLOR }}
                 className={[
                   "flex shrink-0 items-center leading-none transition-opacity duration-200 ease-out",
                   task.es_clave
@@ -569,11 +561,11 @@ export default function TaskList({
                 onChange={(e) => setPrioridad(task, e.target.value as Prioridad)}
                 aria-label="Priority"
                 className="shrink-0 cursor-pointer appearance-none rounded-full px-2 py-0.5 text-[11px] font-medium leading-none outline-none"
-                style={{ color: st.color, backgroundColor: st.bg }}
+                style={{ color: st.dot, backgroundColor: st.tint }}
               >
                 {PRIORIDAD_ORDEN.map((p) => (
                   <option key={p} value={p} className="bg-surface text-ink">
-                    {PRIORIDAD_STYLE[p].label}
+                    {p}
                   </option>
                 ))}
               </select>
