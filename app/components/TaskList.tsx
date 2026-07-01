@@ -689,6 +689,22 @@ export default function TaskList({
             onClear={clearFilters}
           />
 
+          {/* Affordance: explica por qué el drag está en pausa fuera de la vista por
+              defecto. Solo con filas visibles (el estado vacío ya trae su propio clear).
+              Desaparece por completo en la vista default (dndEnabled). */}
+          {!dndEnabled && ordered.length > 0 && (
+            <p className="-mt-2 mb-3 text-xs text-muted">
+              Reordering is paused while filters or sorting are active.{" "}
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="font-medium text-accent transition-colors duration-200 ease-out hover:underline"
+              >
+                Clear to reorder
+              </button>
+            </p>
+          )}
+
           {ordered.length === 0 ? (
             // Filtros que no matchean ninguna tarea (nunca cuando totalTasks === 0).
             <div className="mb-4 rounded-lg border border-line bg-canvas px-4 py-6 text-center">
