@@ -694,14 +694,7 @@ export default function TaskList({
               Desaparece por completo en la vista default (dndEnabled). */}
           {!dndEnabled && ordered.length > 0 && (
             <p className="-mt-2 mb-3 text-xs text-muted">
-              Reordering is paused while filters or sorting are active.{" "}
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="font-medium text-accent transition-colors duration-200 ease-out hover:underline"
-              >
-                Clear to reorder
-              </button>
+              Reordering is paused while filters or sorting are active.
             </p>
           )}
 
