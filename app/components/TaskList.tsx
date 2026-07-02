@@ -20,23 +20,20 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { PRIORIDAD_ORDEN } from "@/lib/types";
-import type { Prioridad, Task } from "@/lib/types";
-import { KEYSTONE_COLOR, PRIORIDAD_COLORS } from "@/lib/colors";
+import type { Prioridad, Task, TaskState } from "@/lib/types";
+import { KEYSTONE_COLOR, PRIORIDAD_COLORS, subtaskPillClasses } from "@/lib/colors";
+import { formatDeadline } from "@/lib/dates";
 import SubtaskList from "./SubtaskList";
-import TaskFilterBar, { DEFAULT_SORT, type SortKey } from "./TaskFilterBar";
+import KanbanBoard from "./KanbanBoard";
+import TaskFilterBar, {
+  DEFAULT_SORT,
+  DEFAULT_VIEW,
+  type SortKey,
+  type ViewMode,
+} from "./TaskFilterBar";
 
 // Rank para ordenar en cliente (debe espejar el orden del store).
 const RANK = Object.fromEntries(PRIORIDAD_ORDEN.map((p, i) => [p, i])) as Record<Prioridad, number>;
-
-const MESES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-// "2026-06-15T00:00:00+00" → "15 jun". Trabaja sobre el string para evitar
-// corrimientos de zona horaria al construir un Date.
-function formatDeadline(d: string): string {
-  const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!m) return "";
-  return `${parseInt(m[3], 10)} ${MESES[parseInt(m[2], 10) - 1]}`;
-}
 
 function sortForDisplay(tasks: Task[]): Task[] {
   return [...tasks].sort(
@@ -64,6 +61,10 @@ function parsePrioridades(raw: string | null): Set<Prioridad> {
 
 function parseSort(raw: string | null): SortKey {
   return raw === "deadline" || raw === "created" ? raw : DEFAULT_SORT;
+}
+
+function parseView(raw: string | null): ViewMode {
+  return raw === "kanban" ? "kanban" : DEFAULT_VIEW;
 }
 
 // Ordena la lista ya filtrada según la clave elegida. Las fechas son strings ISO,
@@ -110,14 +111,6 @@ function ListIcon() {
       <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
     </svg>
   );
-}
-
-// Color del pill de subtareas según el progreso: índigo (neutral, 0 hechas),
-// ámbar (en progreso) o verde (todas completas).
-function subtaskPillClasses(total: number, completed: number): string {
-  if (completed >= total) return "border-green-200 bg-green-50 text-green-700";
-  if (completed > 0) return "border-amber-200 bg-amber-50 text-amber-700";
-  return "border-indigo-200 bg-indigo-50 text-indigo-600";
 }
 
 type SortableState = ReturnType<typeof useSortable>;
@@ -216,6 +209,7 @@ export default function TaskList({
   );
   const sort = parseSort(searchParams.get("sort"));
   const keystonesOnly = searchParams.get("keystones") === "1";
+  const view = parseView(searchParams.get("view"));
   const filtersActive = selectedPrios.size > 0 || keystonesOnly;
 
   // Reescribe los query params conservando los que no gestionamos aquí.
@@ -244,6 +238,13 @@ export default function TaskList({
     updateQuery((params) => {
       if (next === DEFAULT_SORT) params.delete("sort");
       else params.set("sort", next);
+    });
+  }
+
+  function changeView(next: ViewMode) {
+    updateQuery((params) => {
+      if (next === DEFAULT_VIEW) params.delete("view");
+      else params.set("view", next);
     });
   }
 
@@ -685,14 +686,17 @@ export default function TaskList({
             onSortChange={changeSort}
             keystonesOnly={keystonesOnly}
             onToggleKeystones={toggleKeystones}
-            active={filtersActive || sort !== DEFAULT_SORT}
+            view={view}
+            onViewChange={changeView}
+            // En Kanban el orden es fijo, así que "Clear" solo refleja los filtros visibles.
+            active={view === "kanban" ? filtersActive : filtersActive || sort !== DEFAULT_SORT}
             onClear={clearFilters}
           />
 
           {/* Affordance: explica por qué el drag está en pausa fuera de la vista por
-              defecto. Solo con filas visibles (el estado vacío ya trae su propio clear).
-              Desaparece por completo en la vista default (dndEnabled). */}
-          {!dndEnabled && ordered.length > 0 && (
+              defecto. Solo en la lista (el Kanban tiene su propio drag entre columnas)
+              y con filas visibles. Desaparece por completo en la vista default (dndEnabled). */}
+          {view === "list" && !dndEnabled && ordered.length > 0 && (
             <p className="-mt-2 mb-3 text-xs text-muted">
               Reordering is paused while filters or sorting are active.
             </p>
@@ -710,6 +714,14 @@ export default function TaskList({
                 Clear filters
               </button>
             </div>
+          ) : view === "kanban" ? (
+            // Tablero Kanban: recibe las tareas ya filtradas (prioridad + keystones);
+            // el orden por columna es fijo, así que `sort` se ignora aquí.
+            <KanbanBoard
+              tasks={filtered}
+              subtaskSummary={subtaskSummary}
+              onMove={(task, estado: TaskState) => void patchTask(task, { estado })}
+            />
           ) : dndEnabled ? (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
               <ul className="mb-4 flex flex-col gap-1.5">

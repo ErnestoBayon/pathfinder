@@ -15,6 +15,11 @@ export type SortKey = "prioridad" | "deadline" | "created";
 
 export const DEFAULT_SORT: SortKey = "prioridad";
 
+// Vista de las tareas: lista (default) o tablero Kanban. Persistida en la URL.
+export type ViewMode = "list" | "kanban";
+
+export const DEFAULT_VIEW: ViewMode = "list";
+
 export const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "prioridad", label: "Priority (high→low)" },
   { value: "deadline", label: "Deadline (soonest)" },
@@ -28,6 +33,28 @@ const CHIP_BASE =
   "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-200 ease-out";
 const CHIP_INACTIVE = "border-line bg-surface text-muted hover:text-ink";
 
+// Segmento del toggle List/Board: activo = relleno índigo; inactivo = ghost.
+const SEG_BASE =
+  "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors duration-200 ease-out";
+
+function ListGlyph() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+    </svg>
+  );
+}
+
+function BoardGlyph() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden>
+      <rect x="3" y="4" width="5" height="16" rx="1" />
+      <rect x="9.5" y="4" width="5" height="11" rx="1" />
+      <rect x="16" y="4" width="5" height="8" rx="1" />
+    </svg>
+  );
+}
+
 // Barra de filtro/orden 100% cliente. Presentacional: no conoce la URL; recibe
 // el estado ya derivado y notifica cambios hacia arriba (TaskList escribe la URL).
 export default function TaskFilterBar({
@@ -37,6 +64,8 @@ export default function TaskFilterBar({
   onSortChange,
   keystonesOnly,
   onToggleKeystones,
+  view,
+  onViewChange,
   active,
   onClear,
 }: {
@@ -46,6 +75,8 @@ export default function TaskFilterBar({
   onSortChange: (s: SortKey) => void;
   keystonesOnly: boolean;
   onToggleKeystones: () => void;
+  view: ViewMode;
+  onViewChange: (v: ViewMode) => void;
   active: boolean;
   onClear: () => void;
 }) {
@@ -93,24 +124,51 @@ export default function TaskFilterBar({
         Keystones
       </button>
 
-      {/* Orden: empujado a la derecha. */}
-      <div className="ml-auto flex items-center gap-1.5">
-        <label htmlFor="task-sort" className="text-xs text-muted">
-          Sort
-        </label>
-        <select
-          id="task-sort"
-          value={sort}
-          onChange={(e) => onSortChange(e.target.value as SortKey)}
-          aria-label="Sort tasks"
-          className="cursor-pointer rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink outline-none transition-colors duration-200 ease-out hover:border-accent focus:border-accent"
-        >
-          {SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+      {/* Bloque derecho: toggle de vista + orden (este último solo en lista). */}
+      <div className="ml-auto flex items-center gap-3">
+        {/* Toggle List / Board. Segmentos ghost; el activo se rellena en índigo. */}
+        <div className="inline-flex items-center gap-0.5 rounded-full border border-line bg-surface p-0.5">
+          <button
+            type="button"
+            onClick={() => onViewChange("list")}
+            aria-pressed={view === "list"}
+            className={[SEG_BASE, view === "list" ? "bg-accent text-white" : "text-muted hover:text-ink"].join(" ")}
+          >
+            <ListGlyph />
+            List
+          </button>
+          <button
+            type="button"
+            onClick={() => onViewChange("kanban")}
+            aria-pressed={view === "kanban"}
+            className={[SEG_BASE, view === "kanban" ? "bg-accent text-white" : "text-muted hover:text-ink"].join(" ")}
+          >
+            <BoardGlyph />
+            Board
+          </button>
+        </div>
+
+        {/* Orden: irrelevante en Kanban (las columnas tienen orden fijo), se oculta ahí. */}
+        {view === "list" && (
+          <div className="flex items-center gap-1.5">
+            <label htmlFor="task-sort" className="text-xs text-muted">
+              Sort
+            </label>
+            <select
+              id="task-sort"
+              value={sort}
+              onChange={(e) => onSortChange(e.target.value as SortKey)}
+              aria-label="Sort tasks"
+              className="cursor-pointer rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink outline-none transition-colors duration-200 ease-out hover:border-accent focus:border-accent"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {active && (
