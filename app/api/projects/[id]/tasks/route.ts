@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { createTask, listTasks } from "@/lib/store";
+import { PRIORIDAD_ORDEN } from "@/lib/types";
+import type { TaskState } from "@/lib/types";
 import { getAuthUser, validateProjectOwnership } from "@/lib/auth";
 
 export const runtime = "nodejs";
+
+const VALID_ESTADOS: TaskState[] = ["todo", "doing", "done"];
 
 // GET /api/projects/[id]/tasks — lista las tareas del proyecto (para refetch del cliente).
 export async function GET(req: Request, { params }: { params: { id: string } }) {
@@ -26,6 +30,8 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 }
 
 // POST /api/projects/[id]/tasks — crea una tarea en el proyecto.
+// Acepta `estado` (default "todo") y `prioridad` (default "Medium") opcionales
+// para que la vista Board pueda crear tareas directamente en una columna concreta.
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const user = await getAuthUser(req);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -39,8 +45,27 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "Task text is required" }, { status: 400 });
   }
 
+  // Validar estado opcional.
+  if (body?.estado !== undefined && !VALID_ESTADOS.includes(body.estado)) {
+    return NextResponse.json(
+      { error: 'estado must be "todo", "doing" or "done"' },
+      { status: 400 },
+    );
+  }
+
+  // Validar prioridad opcional.
+  if (body?.prioridad !== undefined && !PRIORIDAD_ORDEN.includes(body.prioridad)) {
+    return NextResponse.json(
+      { error: "priority must be High, Medium or Low" },
+      { status: 400 },
+    );
+  }
+
   try {
-    const task = await createTask(params.id, texto);
+    const task = await createTask(params.id, texto, {
+      estado: body?.estado,
+      prioridad: body?.prioridad,
+    });
     return NextResponse.json({ task });
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";

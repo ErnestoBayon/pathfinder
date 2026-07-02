@@ -146,11 +146,11 @@ export async function loadProjectTasks(projectId: string): Promise<{
   return { tasks, suggested, subtaskCounts };
 }
 
-/** Crea una tarea (estado `pending`) en un proyecto y la devuelve. */
+/** Crea una tarea en un proyecto y la devuelve. */
 export async function createTask(
   projectId: string,
   texto: string,
-  opts: { prioridad?: Prioridad; deadline?: string | null; suggested?: boolean } = {},
+  opts: { estado?: TaskState; prioridad?: Prioridad; deadline?: string | null; suggested?: boolean } = {},
 ): Promise<Task> {
   const id = `task-${crypto.randomUUID()}`;
   const { data, error } = await supabase
@@ -159,7 +159,7 @@ export async function createTask(
       id,
       project_id: projectId,
       texto,
-      estado: "todo",
+      estado: opts.estado ?? "todo",
       prioridad: opts.prioridad ?? "Medium",
       deadline: opts.deadline ?? null,
       suggested: opts.suggested ?? false,
