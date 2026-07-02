@@ -50,12 +50,14 @@ export default function FloatingChatBubble({
         <AgentAvatar color="#ffffff" state="active" size={28} />
       </button>
 
-      {/* Expanded panel — same footprint as Overview's PM column, anchored bottom-right */}
+      {/* Expanded panel — fixed to bottom-right, grows upward. `fixed` is the only
+          position declaration; `relative` must NOT appear here or it overrides `fixed`. */}
       <div
         className={[
           "fixed bottom-6 right-6 z-[60]",
-          "relative h-[520px] w-96 overflow-hidden rounded-2xl",
-          "border border-line bg-surface shadow-2xl",
+          "h-[520px] max-h-[calc(100vh-5rem)] w-96 overflow-hidden rounded-2xl",
+          "border border-line bg-surface",
+          "shadow-[0_16px_48px_rgba(0,0,0,0.45)] ring-1 ring-white/10",
           !open ? "hidden" : "",
         ].join(" ")}
       >
