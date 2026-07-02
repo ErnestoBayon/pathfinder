@@ -26,3 +26,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# research / jupyter artifacts
+.ipynb_checkpoints/
+anaconda_projects/
+
+# tooling / local scratch
+.claude/
+PDF notebook report did and A:B Testing/
