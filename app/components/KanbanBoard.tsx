@@ -171,7 +171,7 @@ function Column({
       <div
         ref={setNodeRef}
         className={[
-          "flex min-h-[6rem] flex-1 flex-col gap-2 rounded-xl border p-2 transition-colors duration-200 ease-out",
+          "flex min-h-[24rem] flex-1 flex-col gap-2 rounded-xl border p-2.5 transition-colors duration-200 ease-out",
           isOver ? "border-accent/40 bg-accent/5" : "border-line bg-canvas",
         ].join(" ")}
       >
@@ -215,7 +215,7 @@ export default function KanbanBoard({
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
-      <div className="mb-4 grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-4">
         {COLUMNS.map(({ estado, title }) => {
           const group = sortColumn(tasks.filter((t) => t.estado === estado));
           return (

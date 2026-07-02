@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -20,17 +19,12 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { PRIORIDAD_ORDEN } from "@/lib/types";
-import type { Prioridad, Task, TaskState } from "@/lib/types";
+import type { Prioridad, Task } from "@/lib/types";
 import { KEYSTONE_COLOR, PRIORIDAD_COLORS, subtaskPillClasses } from "@/lib/colors";
 import { formatDeadline } from "@/lib/dates";
 import SubtaskList from "./SubtaskList";
-import KanbanBoard from "./KanbanBoard";
-import TaskFilterBar, {
-  DEFAULT_SORT,
-  DEFAULT_VIEW,
-  type SortKey,
-  type ViewMode,
-} from "./TaskFilterBar";
+import TaskFilterBar, { DEFAULT_SORT, type SortKey } from "./TaskFilterBar";
+import { useTaskFilters } from "./useTaskFilters";
 
 // Rank para ordenar en cliente (debe espejar el orden del store).
 const RANK = Object.fromEntries(PRIORIDAD_ORDEN.map((p, i) => [p, i])) as Record<Prioridad, number>;
@@ -44,27 +38,11 @@ function sortForDisplay(tasks: Task[]): Task[] {
   );
 }
 
-// ── Filtro/orden en cliente ────────────────────────────────────────────────
-// Lee/valida los query params contra los valores REALES del dominio; cualquier
-// valor desconocido se ignora (la URL es editable a mano / compartible).
-const VALID_PRIORIDADES = new Set<Prioridad>(PRIORIDAD_ORDEN);
-
-function parsePrioridades(raw: string | null): Set<Prioridad> {
-  const set = new Set<Prioridad>();
-  if (!raw) return set;
-  for (const part of raw.split(",")) {
-    const v = part.trim() as Prioridad;
-    if (VALID_PRIORIDADES.has(v)) set.add(v);
-  }
-  return set;
-}
-
+// ── Orden en cliente ─────────────────────────────────────────────────────────
+// El filtro (prioridad + keystones) vive en useTaskFilters; aquí solo el orden,
+// que es un concepto propio de la lista.
 function parseSort(raw: string | null): SortKey {
   return raw === "deadline" || raw === "created" ? raw : DEFAULT_SORT;
-}
-
-function parseView(raw: string | null): ViewMode {
-  return raw === "kanban" ? "kanban" : DEFAULT_VIEW;
 }
 
 // Ordena la lista ya filtrada según la clave elegida. Las fechas son strings ISO,
@@ -197,42 +175,20 @@ export default function TaskList({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  // Estado de filtro/orden: la URL es la única fuente de verdad (vistas compartibles
-  // y persistentes al refrescar). No toca el store ni dispara queries.
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const router = useRouter();
+  // Filtro (prioridad + keystones) compartido con la vista Board vía useTaskFilters:
+  // la URL es la única fuente de verdad. El orden (`sort`) es propio de la lista.
+  const {
+    searchParams,
+    selectedPrios,
+    keystonesOnly,
+    filtersActive,
+    updateQuery,
+    togglePrioridad,
+    toggleKeystones,
+    filterTasks,
+  } = useTaskFilters();
 
-  const selectedPrios = useMemo(
-    () => parsePrioridades(searchParams.get("prioridad")),
-    [searchParams],
-  );
   const sort = parseSort(searchParams.get("sort"));
-  const keystonesOnly = searchParams.get("keystones") === "1";
-  const view = parseView(searchParams.get("view"));
-  const filtersActive = selectedPrios.size > 0 || keystonesOnly;
-
-  // Reescribe los query params conservando los que no gestionamos aquí.
-  const updateQuery = useCallback(
-    (mutate: (params: URLSearchParams) => void) => {
-      const params = new URLSearchParams(searchParams.toString());
-      mutate(params);
-      const qs = params.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    },
-    [searchParams, pathname, router],
-  );
-
-  function togglePrioridad(p: Prioridad) {
-    updateQuery((params) => {
-      const next = new Set(selectedPrios);
-      if (next.has(p)) next.delete(p);
-      else next.add(p);
-      // Serializamos en el orden canónico para que la URL sea estable/legible.
-      if (next.size === 0) params.delete("prioridad");
-      else params.set("prioridad", PRIORIDAD_ORDEN.filter((x) => next.has(x)).join(","));
-    });
-  }
 
   function changeSort(next: SortKey) {
     updateQuery((params) => {
@@ -241,20 +197,7 @@ export default function TaskList({
     });
   }
 
-  function changeView(next: ViewMode) {
-    updateQuery((params) => {
-      if (next === DEFAULT_VIEW) params.delete("view");
-      else params.set("view", next);
-    });
-  }
-
-  function toggleKeystones() {
-    updateQuery((params) => {
-      if (keystonesOnly) params.delete("keystones");
-      else params.set("keystones", "1");
-    });
-  }
-
+  // "Clear" de la lista limpia también el orden (el filtro lo limpia el hook).
   function clearFilters() {
     updateQuery((params) => {
       params.delete("prioridad");
@@ -420,13 +363,8 @@ export default function TaskList({
 
   const pendientes = tasks.filter((t) => t.estado !== "done").length;
 
-  // Filtro cliente sobre lo ya cargado: prioridades seleccionadas (multi) + keystones.
-  const filtered = useMemo(() => {
-    let v = tasks;
-    if (selectedPrios.size > 0) v = v.filter((t) => selectedPrios.has(t.prioridad));
-    if (keystonesOnly) v = v.filter((t) => t.es_clave);
-    return v;
-  }, [tasks, selectedPrios, keystonesOnly]);
+  // Filtro cliente sobre lo ya cargado (prioridad + keystones), luego orden.
+  const filtered = useMemo(() => filterTasks(tasks), [filterTasks, tasks]);
   const ordered = useMemo(() => applySort(filtered, sort), [filtered, sort]);
 
   // Drag & drop reordena dentro de una prioridad escribiendo `orden`; eso solo es
@@ -686,17 +624,14 @@ export default function TaskList({
             onSortChange={changeSort}
             keystonesOnly={keystonesOnly}
             onToggleKeystones={toggleKeystones}
-            view={view}
-            onViewChange={changeView}
-            // En Kanban el orden es fijo, así que "Clear" solo refleja los filtros visibles.
-            active={view === "kanban" ? filtersActive : filtersActive || sort !== DEFAULT_SORT}
+            active={filtersActive || sort !== DEFAULT_SORT}
             onClear={clearFilters}
           />
 
           {/* Affordance: explica por qué el drag está en pausa fuera de la vista por
-              defecto. Solo en la lista (el Kanban tiene su propio drag entre columnas)
-              y con filas visibles. Desaparece por completo en la vista default (dndEnabled). */}
-          {view === "list" && !dndEnabled && ordered.length > 0 && (
+              defecto. Solo con filas visibles (el estado vacío ya trae su propio clear).
+              Desaparece por completo en la vista default (dndEnabled). */}
+          {!dndEnabled && ordered.length > 0 && (
             <p className="-mt-2 mb-3 text-xs text-muted">
               Reordering is paused while filters or sorting are active.
             </p>
@@ -714,14 +649,6 @@ export default function TaskList({
                 Clear filters
               </button>
             </div>
-          ) : view === "kanban" ? (
-            // Tablero Kanban: recibe las tareas ya filtradas (prioridad + keystones);
-            // el orden por columna es fijo, así que `sort` se ignora aquí.
-            <KanbanBoard
-              tasks={filtered}
-              subtaskSummary={subtaskSummary}
-              onMove={(task, estado: TaskState) => void patchTask(task, { estado })}
-            />
           ) : dndEnabled ? (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
               <ul className="mb-4 flex flex-col gap-1.5">
