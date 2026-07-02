@@ -1,9 +1,35 @@
 import { NextResponse } from "next/server";
 import { deleteTask, updateTask, type TaskPatch } from "@/lib/store";
-import { PRIORIDAD_ORDEN } from "@/lib/types";
+import { PRIORIDAD_ORDEN, type Prioridad, type TaskState } from "@/lib/types";
 import { getAuthUser, validateProjectOwnership, projectIdForTask } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 
 export const runtime = "nodejs";
+
+// Un evento de instrumentación para la tabla `experiment_events`.
+interface ExperimentEvent {
+  user_id: string;
+  task_id: string;
+  project_id: string;
+  event_type: string;
+  previous_value: string | null;
+  new_value: string | null;
+}
+
+// Inserta eventos en `experiment_events`. Best-effort: si el insert falla,
+// loggea el error en consola y sigue (nunca debe romper la respuesta del PATCH).
+async function logTaskEvents(events: ExperimentEvent[]): Promise<void> {
+  if (events.length === 0) return;
+  try {
+    const { error } = await supabase.from("experiment_events").insert(events);
+    if (error) {
+      console.error("experiment_events insert failed:", error.message);
+    }
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : "error desconocido";
+    console.error("experiment_events insert failed:", detail);
+  }
+}
 
 // PATCH /api/tasks/[id] — actualiza los campos que vengan en el body
 // (estado, texto, prioridad, deadline u orden). Valida cada campo presente.
@@ -78,8 +104,53 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
+  // Leemos el estado previo de la tarea para poder loggear qué cambió (service-role).
+  const { data: prevTask } = await supabase
+    .from("tasks")
+    .select("estado, prioridad, project_id")
+    .eq("id", params.id)
+    .maybeSingle();
+  const prev = prevTask as
+    | { estado: TaskState; prioridad: Prioridad; project_id: string }
+    | null;
+
   try {
     const task = await updateTask(params.id, patch);
+
+    // Instrumentación del experimento: registra los cambios relevantes.
+    if (prev) {
+      const base = { user_id: user.id, task_id: params.id, project_id: prev.project_id };
+      const events: ExperimentEvent[] = [];
+
+      if (task.estado !== prev.estado) {
+        events.push({
+          ...base,
+          event_type: "status_changed",
+          previous_value: prev.estado,
+          new_value: task.estado,
+        });
+        if (task.estado === "done") {
+          events.push({
+            ...base,
+            event_type: "task_completed",
+            previous_value: prev.estado,
+            new_value: task.estado,
+          });
+        }
+      }
+
+      if (task.prioridad !== prev.prioridad) {
+        events.push({
+          ...base,
+          event_type: "priority_changed",
+          previous_value: prev.prioridad,
+          new_value: task.prioridad,
+        });
+      }
+
+      await logTaskEvents(events);
+    }
+
     return NextResponse.json({ task });
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";
