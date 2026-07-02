@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getProject } from "@/lib/store";
+import { getProject, loadMessages } from "@/lib/store";
 import { DEFAULT_PROJECT_COLOR } from "@/lib/colors";
 import ProjectTabs from "../../components/ProjectTabs";
+import FloatingChatBubble from "../../components/FloatingChatBubble";
 
 // Lee el proyecto fresco de Supabase en cada request.
 export const dynamic = "force-dynamic";
@@ -21,7 +22,10 @@ export default async function ProjectLayout({
   const project = await getProject(params.id).catch(() => null);
   if (!project) notFound();
 
+  const messages = await loadMessages(params.id).catch(() => []);
+
   return (
+    <>
     <div className="min-h-screen">
       {/* Navbar simple */}
       <nav className="border-b border-line bg-surface">
@@ -60,5 +64,7 @@ export default async function ProjectLayout({
         {children}
       </main>
     </div>
+    <FloatingChatBubble projectId={project.id} initialMessages={messages} />
+    </>
   );
 }
