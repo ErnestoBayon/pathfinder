@@ -40,6 +40,16 @@ export const PRIORIDAD_COLORS: Record<Prioridad, PriorityColor> = {
   Low: { dot: "#64748B", tint: "rgba(100,116,139,0.14)", textOn: "#334155" },
 };
 
+// ── Subtareas ─────────────────────────────────────────────────────────────────
+// Color del pill de subtareas según el progreso: índigo (neutral, 0 hechas),
+// ámbar (en progreso) o verde (todas completas). Compartido por la fila de la
+// lista y la card del tablero Kanban.
+export function subtaskPillClasses(total: number, completed: number): string {
+  if (completed >= total) return "border-green-200 bg-green-50 text-green-700";
+  if (completed > 0) return "border-amber-200 bg-amber-50 text-amber-700";
+  return "border-indigo-200 bg-indigo-50 text-indigo-600";
+}
+
 // ── Keystone (tarea clave) ────────────────────────────────────────────────────
 /** Violeta del ⭐ de tareas clave. Identidad única del icono y de la pill de keystones. */
 export const KEYSTONE_COLOR = "#7C3AED";

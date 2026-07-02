@@ -29,7 +29,9 @@ const CHIP_BASE =
 const CHIP_INACTIVE = "border-line bg-surface text-muted hover:text-ink";
 
 // Barra de filtro/orden 100% cliente. Presentacional: no conoce la URL; recibe
-// el estado ya derivado y notifica cambios hacia arriba (TaskList escribe la URL).
+// el estado ya derivado y notifica cambios hacia arriba (el caller escribe la URL).
+// El orden es opcional: la vista Board no lo usa (columnas con orden fijo), así que
+// omitir `sort`/`onSortChange` esconde el dropdown de orden.
 export default function TaskFilterBar({
   selected,
   onTogglePrioridad,
@@ -42,8 +44,8 @@ export default function TaskFilterBar({
 }: {
   selected: Set<Prioridad>;
   onTogglePrioridad: (p: Prioridad) => void;
-  sort: SortKey;
-  onSortChange: (s: SortKey) => void;
+  sort?: SortKey;
+  onSortChange?: (s: SortKey) => void;
   keystonesOnly: boolean;
   onToggleKeystones: () => void;
   active: boolean;
@@ -93,31 +95,37 @@ export default function TaskFilterBar({
         Keystones
       </button>
 
-      {/* Orden: empujado a la derecha. */}
-      <div className="ml-auto flex items-center gap-1.5">
-        <label htmlFor="task-sort" className="text-xs text-muted">
-          Sort
-        </label>
-        <select
-          id="task-sort"
-          value={sort}
-          onChange={(e) => onSortChange(e.target.value as SortKey)}
-          aria-label="Sort tasks"
-          className="cursor-pointer rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink outline-none transition-colors duration-200 ease-out hover:border-accent focus:border-accent"
-        >
-          {SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Orden: empujado a la derecha. Solo en la lista (la vista Board lo omite). */}
+      {onSortChange && (
+        <div className="ml-auto flex items-center gap-1.5">
+          <label htmlFor="task-sort" className="text-xs text-muted">
+            Sort
+          </label>
+          <select
+            id="task-sort"
+            value={sort}
+            onChange={(e) => onSortChange(e.target.value as SortKey)}
+            aria-label="Sort tasks"
+            className="cursor-pointer rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink outline-none transition-colors duration-200 ease-out hover:border-accent focus:border-accent"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
+      {/* Sin dropdown de orden (Board), el "Clear" necesita su propio empuje a la derecha. */}
       {active && (
         <button
           type="button"
           onClick={onClear}
-          className="text-xs font-medium text-muted underline-offset-2 transition-colors duration-200 ease-out hover:text-accent hover:underline"
+          className={[
+            "text-xs font-medium text-muted underline-offset-2 transition-colors duration-200 ease-out hover:text-accent hover:underline",
+            onSortChange ? "" : "ml-auto",
+          ].join(" ")}
         >
           Clear
         </button>

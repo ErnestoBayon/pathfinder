@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProjectWorkspace from "../../components/ProjectWorkspace";
 import MiniCalendar from "../../components/MiniCalendar";
-import { getProject, getSubtaskCounts, listTasks, loadMessages } from "@/lib/store";
+import { getProject, loadProjectTasks, loadMessages } from "@/lib/store";
 
 // Lee el estado fresco de Supabase en cada request.
 export const dynamic = "force-dynamic";
@@ -11,52 +10,24 @@ export default async function ProyectoPage({ params }: { params: { id: string } 
   const project = await getProject(params.id).catch(() => null);
   if (!project) notFound();
 
-  // Una sola lectura: separamos las tareas regulares (listado) de las sugeridas
-  // por la IA (panel de approve/reject arriba del listado).
-  const allTasks = await listTasks(params.id).catch(() => []);
-  const tasks = allTasks.filter((t) => !t.suggested);
-  const suggested = allTasks.filter((t) => t.suggested);
+  // Una sola lectura de tareas: separa las regulares (listado) de las sugeridas
+  // por la IA (panel de approve/reject) y trae los counts de subtareas.
+  const { tasks, suggested, subtaskCounts } = await loadProjectTasks(params.id).catch(() => ({
+    tasks: [],
+    suggested: [],
+    subtaskCounts: {},
+  }));
   const messages = await loadMessages(params.id).catch(() => []);
   const deadlineDates = tasks.filter((t) => t.deadline).map((t) => t.deadline!.slice(0, 10));
-  // Counts de subtareas (una sola query) para pintar los pills desde el primer render.
-  const subtaskCounts = await getSubtaskCounts(tasks.map((t) => t.id)).catch(() => ({}));
 
   return (
-    <div className="min-h-screen">
-      {/* Navbar simple */}
-      <nav className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-5xl items-center px-6 py-4">
-          <Link
-            href="/home"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors duration-200 ease-out hover:text-ink"
-          >
-            <span aria-hidden>←</span> Projects
-          </Link>
-        </div>
-      </nav>
-
-      <main className="mx-auto max-w-5xl px-6 py-10 sm:py-12">
-        {/* Título y descripción: full width, arriba del grid. */}
-        <header>
-          <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-            {project.nombre}
-          </h1>
-          {project.descripcion && (
-            <div className="mt-2 max-h-28 max-w-2xl overflow-y-auto rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm leading-relaxed text-gray-500">
-              {project.descripcion}
-            </div>
-          )}
-        </header>
-
-        <ProjectWorkspace
-          projectId={project.id}
-          initialTasks={tasks}
-          initialSuggested={suggested}
-          initialMessages={messages}
-          initialSubtaskCounts={subtaskCounts}
-          calendar={<MiniCalendar deadlineDates={deadlineDates} projectId={project.id} />}
-        />
-      </main>
-    </div>
+    <ProjectWorkspace
+      projectId={project.id}
+      initialTasks={tasks}
+      initialSuggested={suggested}
+      initialMessages={messages}
+      initialSubtaskCounts={subtaskCounts}
+      calendar={<MiniCalendar deadlineDates={deadlineDates} projectId={project.id} />}
+    />
   );
 }

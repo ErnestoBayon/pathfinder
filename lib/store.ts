@@ -128,11 +128,29 @@ export async function listTasks(projectId: string): Promise<Task[]> {
   return sortTasks((data ?? []) as Task[]);
 }
 
-/** Crea una tarea (estado `pending`) en un proyecto y la devuelve. */
+/**
+ * Carga las tareas de un proyecto en una sola query y las separa en regulares
+ * (para el listado / tablero) y sugeridas por la IA (panel de approve/reject),
+ * más los counts de subtareas de las regulares. Fuente única compartida por la
+ * vista Overview y la ruta Board para no duplicar la orquestación de queries.
+ */
+export async function loadProjectTasks(projectId: string): Promise<{
+  tasks: Task[];
+  suggested: Task[];
+  subtaskCounts: Record<string, { total: number; done: number }>;
+}> {
+  const all = await listTasks(projectId);
+  const tasks = all.filter((t) => !t.suggested);
+  const suggested = all.filter((t) => t.suggested);
+  const subtaskCounts = await getSubtaskCounts(tasks.map((t) => t.id));
+  return { tasks, suggested, subtaskCounts };
+}
+
+/** Crea una tarea en un proyecto y la devuelve. */
 export async function createTask(
   projectId: string,
   texto: string,
-  opts: { prioridad?: Prioridad; deadline?: string | null; suggested?: boolean } = {},
+  opts: { estado?: TaskState; prioridad?: Prioridad; deadline?: string | null; suggested?: boolean } = {},
 ): Promise<Task> {
   const id = `task-${crypto.randomUUID()}`;
   const { data, error } = await supabase
@@ -141,7 +159,7 @@ export async function createTask(
       id,
       project_id: projectId,
       texto,
-      estado: "todo",
+      estado: opts.estado ?? "todo",
       prioridad: opts.prioridad ?? "Medium",
       deadline: opts.deadline ?? null,
       suggested: opts.suggested ?? false,

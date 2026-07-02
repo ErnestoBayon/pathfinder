@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -21,22 +20,14 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { PRIORIDAD_ORDEN } from "@/lib/types";
 import type { Prioridad, Task } from "@/lib/types";
-import { KEYSTONE_COLOR, PRIORIDAD_COLORS } from "@/lib/colors";
+import { KEYSTONE_COLOR, PRIORIDAD_COLORS, subtaskPillClasses } from "@/lib/colors";
+import { formatDeadline } from "@/lib/dates";
 import SubtaskList from "./SubtaskList";
 import TaskFilterBar, { DEFAULT_SORT, type SortKey } from "./TaskFilterBar";
+import { useTaskFilters } from "./useTaskFilters";
 
 // Rank para ordenar en cliente (debe espejar el orden del store).
 const RANK = Object.fromEntries(PRIORIDAD_ORDEN.map((p, i) => [p, i])) as Record<Prioridad, number>;
-
-const MESES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-// "2026-06-15T00:00:00+00" → "15 jun". Trabaja sobre el string para evitar
-// corrimientos de zona horaria al construir un Date.
-function formatDeadline(d: string): string {
-  const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!m) return "";
-  return `${parseInt(m[3], 10)} ${MESES[parseInt(m[2], 10) - 1]}`;
-}
 
 function sortForDisplay(tasks: Task[]): Task[] {
   return [...tasks].sort(
@@ -47,21 +38,9 @@ function sortForDisplay(tasks: Task[]): Task[] {
   );
 }
 
-// ── Filtro/orden en cliente ────────────────────────────────────────────────
-// Lee/valida los query params contra los valores REALES del dominio; cualquier
-// valor desconocido se ignora (la URL es editable a mano / compartible).
-const VALID_PRIORIDADES = new Set<Prioridad>(PRIORIDAD_ORDEN);
-
-function parsePrioridades(raw: string | null): Set<Prioridad> {
-  const set = new Set<Prioridad>();
-  if (!raw) return set;
-  for (const part of raw.split(",")) {
-    const v = part.trim() as Prioridad;
-    if (VALID_PRIORIDADES.has(v)) set.add(v);
-  }
-  return set;
-}
-
+// ── Orden en cliente ─────────────────────────────────────────────────────────
+// El filtro (prioridad + keystones) vive en useTaskFilters; aquí solo el orden,
+// que es un concepto propio de la lista.
 function parseSort(raw: string | null): SortKey {
   return raw === "deadline" || raw === "created" ? raw : DEFAULT_SORT;
 }
@@ -110,14 +89,6 @@ function ListIcon() {
       <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
     </svg>
   );
-}
-
-// Color del pill de subtareas según el progreso: índigo (neutral, 0 hechas),
-// ámbar (en progreso) o verde (todas completas).
-function subtaskPillClasses(total: number, completed: number): string {
-  if (completed >= total) return "border-green-200 bg-green-50 text-green-700";
-  if (completed > 0) return "border-amber-200 bg-amber-50 text-amber-700";
-  return "border-indigo-200 bg-indigo-50 text-indigo-600";
 }
 
 type SortableState = ReturnType<typeof useSortable>;
@@ -204,41 +175,20 @@ export default function TaskList({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  // Estado de filtro/orden: la URL es la única fuente de verdad (vistas compartibles
-  // y persistentes al refrescar). No toca el store ni dispara queries.
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const router = useRouter();
+  // Filtro (prioridad + keystones) compartido con la vista Board vía useTaskFilters:
+  // la URL es la única fuente de verdad. El orden (`sort`) es propio de la lista.
+  const {
+    searchParams,
+    selectedPrios,
+    keystonesOnly,
+    filtersActive,
+    updateQuery,
+    togglePrioridad,
+    toggleKeystones,
+    filterTasks,
+  } = useTaskFilters();
 
-  const selectedPrios = useMemo(
-    () => parsePrioridades(searchParams.get("prioridad")),
-    [searchParams],
-  );
   const sort = parseSort(searchParams.get("sort"));
-  const keystonesOnly = searchParams.get("keystones") === "1";
-  const filtersActive = selectedPrios.size > 0 || keystonesOnly;
-
-  // Reescribe los query params conservando los que no gestionamos aquí.
-  const updateQuery = useCallback(
-    (mutate: (params: URLSearchParams) => void) => {
-      const params = new URLSearchParams(searchParams.toString());
-      mutate(params);
-      const qs = params.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    },
-    [searchParams, pathname, router],
-  );
-
-  function togglePrioridad(p: Prioridad) {
-    updateQuery((params) => {
-      const next = new Set(selectedPrios);
-      if (next.has(p)) next.delete(p);
-      else next.add(p);
-      // Serializamos en el orden canónico para que la URL sea estable/legible.
-      if (next.size === 0) params.delete("prioridad");
-      else params.set("prioridad", PRIORIDAD_ORDEN.filter((x) => next.has(x)).join(","));
-    });
-  }
 
   function changeSort(next: SortKey) {
     updateQuery((params) => {
@@ -247,13 +197,7 @@ export default function TaskList({
     });
   }
 
-  function toggleKeystones() {
-    updateQuery((params) => {
-      if (keystonesOnly) params.delete("keystones");
-      else params.set("keystones", "1");
-    });
-  }
-
+  // "Clear" de la lista limpia también el orden (el filtro lo limpia el hook).
   function clearFilters() {
     updateQuery((params) => {
       params.delete("prioridad");
@@ -419,13 +363,8 @@ export default function TaskList({
 
   const pendientes = tasks.filter((t) => t.estado !== "done").length;
 
-  // Filtro cliente sobre lo ya cargado: prioridades seleccionadas (multi) + keystones.
-  const filtered = useMemo(() => {
-    let v = tasks;
-    if (selectedPrios.size > 0) v = v.filter((t) => selectedPrios.has(t.prioridad));
-    if (keystonesOnly) v = v.filter((t) => t.es_clave);
-    return v;
-  }, [tasks, selectedPrios, keystonesOnly]);
+  // Filtro cliente sobre lo ya cargado (prioridad + keystones), luego orden.
+  const filtered = useMemo(() => filterTasks(tasks), [filterTasks, tasks]);
   const ordered = useMemo(() => applySort(filtered, sort), [filtered, sort]);
 
   // Drag & drop reordena dentro de una prioridad escribiendo `orden`; eso solo es
