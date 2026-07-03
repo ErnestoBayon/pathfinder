@@ -46,8 +46,10 @@ function truncate(s: string) {
 
 export default function CalendarView({
   tasksByDate,
+  fixedProjectId,
 }: {
   tasksByDate: Record<string, CalendarTask[]>;
+  fixedProjectId?: string;
 }) {
   const today = useMemo(() => new Date(), []);
   const todayStr = ymd(today);
@@ -99,14 +101,15 @@ export default function CalendarView({
   const router = useRouter();
 
   const rawProject = searchParams.get("project") ?? "all";
-  // Si el param referencia un id desconocido, lo ignoramos gracefully.
-  const projectFilter =
-    rawProject === "all" || allProjects.some((p) => p.id === rawProject)
+  // fixedProjectId overrides URL param (single-project mode); otherwise use ?project=.
+  const projectFilter = fixedProjectId
+    ?? (rawProject === "all" || allProjects.some((p) => p.id === rawProject)
       ? rawProject
-      : "all";
+      : "all");
 
   const toggleProject = useCallback(
     (id: string) => {
+      if (fixedProjectId) return;
       const params = new URLSearchParams(searchParams.toString());
       if (id === "all" || id === projectFilter) {
         params.delete("project");
@@ -116,7 +119,7 @@ export default function CalendarView({
       const qs = params.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
-    [searchParams, pathname, router, projectFilter],
+    [fixedProjectId, searchParams, pathname, router, projectFilter],
   );
 
   // Celdas del grid (semana inicia lunes), con relleno de meses adyacentes.

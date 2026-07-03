@@ -17,10 +17,12 @@ export default function ProjectTabs({ projectId }: { projectId: string }) {
 
   const base = `/proyecto/${projectId}`;
   const isBoard = pathname.endsWith("/board");
+  const isCalendar = pathname.endsWith("/calendar");
 
   const tabs = [
-    { label: "Overview", href: `${base}${suffix}`, active: !isBoard },
+    { label: "Overview", href: `${base}${suffix}`, active: !isBoard && !isCalendar },
     { label: "Board", href: `${base}/board${suffix}`, active: isBoard },
+    { label: "Calendar", href: `${base}/calendar${suffix}`, active: isCalendar },
   ];
 
   return (

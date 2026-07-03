@@ -29,11 +29,13 @@ export default function FloatingChatBubble({
   const [open, setOpen] = useState(false);
 
   const isBoard = pathname.endsWith("/board");
+  const isCalendar = pathname.endsWith("/calendar");
+  const isVisible = isBoard || isCalendar;
 
   // Outer wrapper uses CSS hide (not conditional return) so ChatBox stays mounted
   // across route changes and messages persist through minimize/expand cycles.
   return (
-    <div className={isBoard ? undefined : "hidden"} aria-hidden={!isBoard || undefined}>
+    <div className={isVisible ? undefined : "hidden"} aria-hidden={!isVisible || undefined}>
       {/* Collapsed bubble — fixed bottom-right, visible when panel is closed */}
       <button
         onClick={() => setOpen(true)}
