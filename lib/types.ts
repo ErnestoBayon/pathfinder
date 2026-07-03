@@ -37,13 +37,15 @@ export interface Task {
 }
 
 // Tabla `subtasks`: id (uuid), task_id (text, FK → tasks.id), title (text),
-// completed (boolean, default false), position (integer), created_at (timestamptz)
+// completed (boolean, default false), position (integer),
+// prioridad (text 'High'/'Medium'/'Low', default 'Medium'), created_at (timestamptz)
 export interface Subtask {
   id: string;
   task_id: string;
   title: string;
   completed: boolean;
   position: number;
+  prioridad: Prioridad;
   created_at?: string;
 }
 

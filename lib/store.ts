@@ -6,7 +6,7 @@ import type { ChatRole, Message, Prioridad, Project, Subtask, Task, TaskState } 
 
 const TASK_COLS = "id, project_id, texto, estado, prioridad, orden, es_clave, suggested, deadline, created_at";
 const MESSAGE_COLS = "id, project_id, role, content, created_at";
-const SUBTASK_COLS = "id, task_id, title, completed, position, created_at";
+const SUBTASK_COLS = "id, task_id, title, completed, position, prioridad, created_at";
 
 const RANK = Object.fromEntries(
   PRIORIDAD_ORDEN.map((p, i) => [p, i]),
@@ -226,7 +226,11 @@ export async function listSubtasks(taskId: string): Promise<Subtask[]> {
  * Crea una subtarea al final de la lista. La `position` es el conteo de subtareas
  * existentes para esa tarea (0-based). El id (uuid) y created_at los pone la base.
  */
-export async function createSubtask(taskId: string, title: string): Promise<Subtask> {
+export async function createSubtask(
+  taskId: string,
+  title: string,
+  prioridad: Prioridad = "Medium",
+): Promise<Subtask> {
   const { count, error: countError } = await supabase
     .from("subtasks")
     .select("id", { count: "exact", head: true })
@@ -235,7 +239,7 @@ export async function createSubtask(taskId: string, title: string): Promise<Subt
 
   const { data, error } = await supabase
     .from("subtasks")
-    .insert({ task_id: taskId, title, completed: false, position: count ?? 0 })
+    .insert({ task_id: taskId, title, completed: false, position: count ?? 0, prioridad })
     .select(SUBTASK_COLS)
     .single();
   if (error) throw new Error(error.message);
@@ -269,6 +273,7 @@ export async function getSubtaskCounts(
 export interface SubtaskPatch {
   title?: string;
   completed?: boolean;
+  prioridad?: Prioridad;
 }
 
 /** Aplica un patch parcial a una subtarea y devuelve la subtarea actualizada. */
