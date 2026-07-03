@@ -126,6 +126,11 @@ const toolDefinitions: Anthropic.Tool[] = [
       properties: {
         task_id: { type: "string", description: "ID of the task the subtask belongs to" },
         title: { type: "string", description: "Clear, actionable subtask title" },
+        priority: {
+          type: "string",
+          enum: ["High", "Medium", "Low"],
+          description: "Priority of the subtask. Defaults to 'Medium' if omitted.",
+        },
       },
       required: ["task_id", "title"],
     },
@@ -238,6 +243,7 @@ async function executeTool(
           task_id: s.task_id,
           title: s.title,
           completed: s.completed,
+          priority: s.prioridad,
         })),
       };
     }
@@ -247,7 +253,10 @@ async function executeTool(
       if (!taskId) return { success: false, error: "task_id is required" };
       const title = typeof args.title === "string" ? args.title.trim() : "";
       if (!title) return { success: false, error: "title is required" };
-      const subtask = await createSubtask(taskId, title);
+      const prioridad = PRIORIDAD_ORDEN.includes(args.priority as Prioridad)
+        ? (args.priority as Prioridad)
+        : "Medium";
+      const subtask = await createSubtask(taskId, title, prioridad);
       return {
         success: true,
         subtask: {
@@ -255,6 +264,7 @@ async function executeTool(
           task_id: subtask.task_id,
           title: subtask.title,
           completed: subtask.completed,
+          priority: subtask.prioridad,
         },
       };
     }
