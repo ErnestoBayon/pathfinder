@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import LogoutButton from "../components/LogoutButton";
 import TopNav from "../components/TopNav";
 import CalendarView, { type CalendarTask } from "../components/CalendarView";
 import { createClient } from "@/lib/supabase/server";
 import { listProjects, listTasks } from "@/lib/store";
+import { DEFAULT_PROJECT_COLOR } from "@/lib/colors";
 
 // Lee el estado fresco de Supabase en cada request.
 export const dynamic = "force-dynamic";
@@ -36,6 +38,7 @@ export default async function CalendarPage() {
         priority: t.prioridad,
         projectId: p.id,
         projectName: p.nombre,
+        projectColor: p.color ?? DEFAULT_PROJECT_COLOR,
         date,
         completed: t.estado === "done",
       });
@@ -56,7 +59,9 @@ export default async function CalendarPage() {
       </header>
 
       <div className="mt-10 rounded-2xl border border-line bg-surface p-6 shadow-note">
-        <CalendarView tasksByDate={tasksByDate} />
+        <Suspense>
+          <CalendarView tasksByDate={tasksByDate} />
+        </Suspense>
       </div>
     </main>
   );

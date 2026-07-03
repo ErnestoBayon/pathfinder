@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Prioridad } from "@/lib/types";
+import { PRIORIDAD_COLORS } from "@/lib/colors";
 
 // Tarea aplanada para el calendario (datos ya serializables desde el server).
 export interface CalendarTask {
@@ -11,6 +13,7 @@ export interface CalendarTask {
   priority: Prioridad;
   projectId: string;
   projectName: string;
+  projectColor: string;
   date: string; // YYYY-MM-DD
   completed: boolean;
 }
@@ -19,15 +22,7 @@ const MESES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-const DIAS = ["M", "T", "W", "T", "F", "S", "S"];
-
-// Chip por prioridad (light, vibrante con ring).
-const CHIP_STYLE: Record<Prioridad, string> = {
-  High: "bg-red-50 text-red-600 ring-1 ring-red-200",
-  Medium: "bg-amber-50 text-amber-600 ring-1 ring-amber-200",
-  Low: "bg-gray-50 text-gray-500 ring-1 ring-gray-200",
-};
-const CHIP_FALLBACK = "bg-gray-50 text-gray-500 ring-1 ring-gray-200";
+const DIAS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
 type PriorityFilter = Prioridad | "all";
 
@@ -60,9 +55,69 @@ export default function CalendarView({
 
   // Filtros (client-side, sin refetch).
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
-  const [projectFilter, setProjectFilter] = useState<string>("all");
   // Las tareas completadas se ven (atenuadas) por defecto; este toggle las oculta.
   const [showCompleted, setShowCompleted] = useState(true);
+  // Popover del filtro de proyecto.
+  const [projectOpen, setProjectOpen] = useState(false);
+  const projectDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!projectOpen) return;
+    function onOutside(e: MouseEvent) {
+      if (projectDropdownRef.current && !projectDropdownRef.current.contains(e.target as Node))
+        setProjectOpen(false);
+    }
+    function onEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setProjectOpen(false);
+    }
+    document.addEventListener("mousedown", onOutside);
+    document.addEventListener("keydown", onEscape);
+    return () => {
+      document.removeEventListener("mousedown", onOutside);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [projectOpen]);
+
+  // Proyectos únicos con al menos una tarea con deadline (cualquier mes).
+  // Derivado del conjunto completo para que los chips sean estables al navegar meses
+  // y para que deep-links ?project=X siempre rendericen el chip activo.
+  const allProjects = useMemo(() => {
+    const seen = new Map<string, { name: string; color: string }>();
+    for (const list of Object.values(tasksByDate)) {
+      for (const t of list) {
+        if (!seen.has(t.projectId))
+          seen.set(t.projectId, { name: t.projectName, color: t.projectColor });
+      }
+    }
+    return Array.from(seen, ([id, { name, color }]) => ({ id, name, color }));
+  }, [tasksByDate]);
+  const showProjectFilter = allProjects.length > 1;
+
+  // Filtro de proyecto via URL param ?project={id} (ausente = todos).
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const rawProject = searchParams.get("project") ?? "all";
+  // Si el param referencia un id desconocido, lo ignoramos gracefully.
+  const projectFilter =
+    rawProject === "all" || allProjects.some((p) => p.id === rawProject)
+      ? rawProject
+      : "all";
+
+  const toggleProject = useCallback(
+    (id: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (id === "all" || id === projectFilter) {
+        params.delete("project");
+      } else {
+        params.set("project", id);
+      }
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [searchParams, pathname, router, projectFilter],
+  );
 
   // Celdas del grid (semana inicia lunes), con relleno de meses adyacentes.
   const cells = useMemo(() => {
@@ -75,26 +130,6 @@ export default function CalendarView({
       return { date: d, str: ymd(d), inMonth: d.getMonth() === view.month };
     });
   }, [view]);
-
-  const monthPrefix = `${view.year}-${pad(view.month + 1)}`;
-
-  // Proyectos únicos con tareas en el mes visible (para el filtro de proyecto).
-  const monthProjects = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const [date, list] of Object.entries(tasksByDate)) {
-      if (!date.startsWith(monthPrefix)) continue;
-      for (const t of list) if (!seen.has(t.projectId)) seen.set(t.projectId, t.projectName);
-    }
-    return Array.from(seen, ([id, name]) => ({ id, name }));
-  }, [tasksByDate, monthPrefix]);
-  const showProjectFilter = monthProjects.length > 1;
-
-  // Si el proyecto filtrado ya no tiene tareas en el mes visible, vuelve a "todos".
-  useEffect(() => {
-    if (projectFilter !== "all" && !monthProjects.some((p) => p.id === projectFilter)) {
-      setProjectFilter("all");
-    }
-  }, [monthProjects, projectFilter]);
 
   // Tareas de un día tras aplicar ambos filtros.
   function tasksFor(dateStr: string): CalendarTask[] {
@@ -150,22 +185,81 @@ export default function CalendarView({
             })}
           </div>
 
-          {/* Filtro por proyecto (solo si hay más de uno con tareas este mes) */}
-          {showProjectFilter && (
-            <select
-              value={projectFilter}
-              onChange={(e) => setProjectFilter(e.target.value)}
-              aria-label="Filter by project"
-              className="cursor-pointer rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 outline-none transition-colors duration-200 ease-out hover:bg-gray-50"
-            >
-              <option value="all">All projects</option>
-              {monthProjects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          )}
+          {/* Filtro por proyecto: dropdown, estado en ?project= */}
+          {showProjectFilter && (() => {
+            const activeProject = projectFilter !== "all"
+              ? allProjects.find((p) => p.id === projectFilter)
+              : null;
+            return (
+              <div ref={projectDropdownRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setProjectOpen((v) => !v)}
+                  className="flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-600 transition-colors duration-200 ease-out hover:bg-gray-50"
+                >
+                  {activeProject && (
+                    <span
+                      style={{ backgroundColor: activeProject.color }}
+                      className="h-2 w-2 shrink-0 rounded-full"
+                    />
+                  )}
+                  <span>{activeProject ? activeProject.name : "All projects"}</span>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="text-gray-400">
+                    <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+
+                {projectOpen && (
+                  <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-gray-100 bg-white py-1 shadow-lg">
+                    {/* All projects */}
+                    <button
+                      type="button"
+                      onClick={() => { toggleProject("all"); setProjectOpen(false); }}
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-gray-50"
+                    >
+                      <span className="flex h-3 w-3 shrink-0 items-center justify-center">
+                        {projectFilter === "all" && (
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                            <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#111827" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className={projectFilter === "all" ? "font-semibold text-gray-900" : "font-medium text-gray-600"}>
+                        All projects
+                      </span>
+                    </button>
+
+                    {allProjects.map((p) => {
+                      const active = projectFilter === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => { toggleProject(p.id); setProjectOpen(false); }}
+                          className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-gray-50"
+                        >
+                          <span className="flex h-3 w-3 shrink-0 items-center justify-center">
+                            {active && (
+                              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#111827" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
+                          </span>
+                          <span
+                            style={{ backgroundColor: p.color }}
+                            className="h-2 w-2 shrink-0 rounded-full"
+                          />
+                          <span className={active ? "font-semibold text-gray-900" : "font-medium text-gray-600"}>
+                            {p.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Mostrar / ocultar tareas completadas (visibles por defecto) */}
           <button
@@ -250,13 +344,22 @@ export default function CalendarView({
                   {visible.map((t) => (
                     <Link key={t.id} href={`/proyecto/${t.projectId}`} className="group/chip relative block">
                       <span
+                        style={{
+                          borderLeft: `3px solid ${t.projectColor}`,
+                          backgroundColor: `${t.projectColor}14`,
+                        }}
                         className={[
-                          "block overflow-hidden text-ellipsis whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-medium leading-tight transition-transform duration-100 hover:scale-[1.02]",
-                          CHIP_STYLE[t.priority] ?? CHIP_FALLBACK,
-                          t.completed ? "line-through opacity-50" : "",
+                          "flex items-center gap-1.5 overflow-hidden rounded px-2 py-0.5 text-[11px] font-medium leading-tight text-gray-800 transition-transform duration-100 hover:scale-[1.02]",
+                          t.completed ? "opacity-50" : "",
                         ].join(" ")}
                       >
-                        {truncate(t.title)}
+                        <span
+                          style={{ backgroundColor: PRIORIDAD_COLORS[t.priority]?.dot ?? "#64748B" }}
+                          className="h-1.5 w-1.5 shrink-0 rounded-full"
+                        />
+                        <span className={["min-w-0 truncate", t.completed ? "line-through" : ""].join(" ")}>
+                          {truncate(t.title)}
+                        </span>
                       </span>
                       {/* Tooltip: título completo + proyecto */}
                       <span className="pointer-events-none absolute left-0 top-full z-50 mt-1 hidden w-max max-w-[220px] rounded-xl bg-gray-900/95 px-2.5 py-1.5 text-xs font-normal leading-snug text-white shadow-xl backdrop-blur-sm group-hover/chip:block">
