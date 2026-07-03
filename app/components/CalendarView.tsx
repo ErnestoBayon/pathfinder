@@ -22,6 +22,7 @@ const MESES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
+const MESES_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DIAS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
 type PriorityFilter = Prioridad | "all";
@@ -43,6 +44,12 @@ function ymd(d: Date) {
 function truncate(s: string) {
   return s.length > 20 ? `${s.slice(0, 20)}…` : s;
 }
+// Monday of the ISO week (Mon-start) containing the given date.
+function getMonday(year: number, month: number, day: number): Date {
+  const d = new Date(year, month, day);
+  const dow = (d.getDay() + 6) % 7; // 0 = Mon
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - dow);
+}
 
 export default function CalendarView({
   tasksByDate,
@@ -53,7 +60,14 @@ export default function CalendarView({
 }) {
   const today = useMemo(() => new Date(), []);
   const todayStr = ymd(today);
-  const [view, setView] = useState(() => ({ year: today.getFullYear(), month: today.getMonth() }));
+
+  // Anchor: the date driving the current visible position.
+  // Month view uses year+month; week view uses the exact day.
+  const [anchor, setAnchor] = useState(() => ({
+    year: today.getFullYear(),
+    month: today.getMonth(),
+    day: today.getDate(),
+  }));
 
   // Filtros (client-side, sin refetch).
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
@@ -81,8 +95,6 @@ export default function CalendarView({
   }, [projectOpen]);
 
   // Proyectos únicos con al menos una tarea con deadline (cualquier mes).
-  // Derivado del conjunto completo para que los chips sean estables al navegar meses
-  // y para que deep-links ?project=X siempre rendericen el chip activo.
   const allProjects = useMemo(() => {
     const seen = new Map<string, { name: string; color: string }>();
     for (const list of Object.values(tasksByDate)) {
@@ -93,9 +105,8 @@ export default function CalendarView({
     }
     return Array.from(seen, ([id, { name, color }]) => ({ id, name, color }));
   }, [tasksByDate]);
-  const showProjectFilter = allProjects.length > 1;
+  const showProjectFilter = !fixedProjectId && allProjects.length > 1;
 
-  // Filtro de proyecto via URL param ?project={id} (ausente = todos).
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -122,19 +133,66 @@ export default function CalendarView({
     [fixedProjectId, searchParams, pathname, router, projectFilter],
   );
 
-  // Celdas del grid (semana inicia lunes), con relleno de meses adyacentes.
-  const cells = useMemo(() => {
-    const first = new Date(view.year, view.month, 1);
+  // ?view=week | absent = month (default).
+  const calView: "month" | "week" = searchParams.get("view") === "week" ? "week" : "month";
+
+  const toggleCalView = useCallback(
+    (v: "month" | "week") => {
+      if (v === calView) return;
+      const params = new URLSearchParams(searchParams.toString());
+      if (v === "month") {
+        params.delete("view");
+        // Show the month that contains the week's Monday.
+        const mon = getMonday(anchor.year, anchor.month, anchor.day);
+        setAnchor({ year: mon.getFullYear(), month: mon.getMonth(), day: 1 });
+      } else {
+        params.set("view", "week");
+        // If today falls in the visible month, anchor to today's week; else keep anchor
+        // so the first day of the visible month anchors to its own week.
+        const inCurrentMonth =
+          today.getFullYear() === anchor.year && today.getMonth() === anchor.month;
+        if (inCurrentMonth) {
+          setAnchor({ year: today.getFullYear(), month: today.getMonth(), day: today.getDate() });
+        }
+      }
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [calView, anchor, today, searchParams, pathname, router],
+  );
+
+  // Month cells: full grid with Mon-start leading/trailing padding days.
+  const monthCells = useMemo(() => {
+    const first = new Date(anchor.year, anchor.month, 1);
     const lead = (first.getDay() + 6) % 7; // 0 = lunes
-    const daysInMonth = new Date(view.year, view.month + 1, 0).getDate();
+    const daysInMonth = new Date(anchor.year, anchor.month + 1, 0).getDate();
     const total = Math.ceil((lead + daysInMonth) / 7) * 7;
     return Array.from({ length: total }, (_, i) => {
-      const d = new Date(view.year, view.month, 1 - lead + i);
-      return { date: d, str: ymd(d), inMonth: d.getMonth() === view.month };
+      const d = new Date(anchor.year, anchor.month, 1 - lead + i);
+      return { date: d, str: ymd(d), inMonth: d.getMonth() === anchor.month };
     });
-  }, [view]);
+  }, [anchor]);
 
-  // Tareas de un día tras aplicar ambos filtros.
+  // Week cells: 7 days Mon–Sun containing the anchor date, no padding.
+  const weekCells = useMemo(() => {
+    const mon = getMonday(anchor.year, anchor.month, anchor.day);
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i);
+      return { date: d, str: ymd(d), inMonth: true };
+    });
+  }, [anchor]);
+
+  const cells = calView === "week" ? weekCells : monthCells;
+
+  // Header title: "July 2026" (month) or "Jul 6 – Jul 12, 2026" (week).
+  const headerTitle = useMemo(() => {
+    if (calView === "month") return `${MESES[anchor.month]} ${anchor.year}`;
+    const mon = getMonday(anchor.year, anchor.month, anchor.day);
+    const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
+    return `${MESES_SHORT[mon.getMonth()]} ${mon.getDate()} – ${MESES_SHORT[sun.getMonth()]} ${sun.getDate()}, ${sun.getFullYear()}`;
+  }, [calView, anchor]);
+
+  // Tareas de un día tras aplicar todos los filtros.
   function tasksFor(dateStr: string): CalendarTask[] {
     return (tasksByDate[dateStr] ?? []).filter(
       (t) =>
@@ -146,14 +204,36 @@ export default function CalendarView({
 
   const hasVisibleTasks = cells.some((c) => tasksFor(c.str).length > 0);
 
-  function prevMonth() {
-    setView((v) => (v.month === 0 ? { year: v.year - 1, month: 11 } : { year: v.year, month: v.month - 1 }));
+  function prev() {
+    if (calView === "month") {
+      setAnchor((a) =>
+        a.month === 0
+          ? { year: a.year - 1, month: 11, day: 1 }
+          : { year: a.year, month: a.month - 1, day: 1 },
+      );
+    } else {
+      setAnchor((a) => {
+        const d = new Date(a.year, a.month, a.day - 7);
+        return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate() };
+      });
+    }
   }
-  function nextMonth() {
-    setView((v) => (v.month === 11 ? { year: v.year + 1, month: 0 } : { year: v.year, month: v.month + 1 }));
+  function next() {
+    if (calView === "month") {
+      setAnchor((a) =>
+        a.month === 11
+          ? { year: a.year + 1, month: 0, day: 1 }
+          : { year: a.year, month: a.month + 1, day: 1 },
+      );
+    } else {
+      setAnchor((a) => {
+        const d = new Date(a.year, a.month, a.day + 7);
+        return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate() };
+      });
+    }
   }
   function goToday() {
-    setView({ year: today.getFullYear(), month: today.getMonth() });
+    setAnchor({ year: today.getFullYear(), month: today.getMonth(), day: today.getDate() });
   }
 
   const navBtn =
@@ -161,11 +241,9 @@ export default function CalendarView({
 
   return (
     <div>
-      {/* Header: título · filtros · navegación */}
+      {/* Header: título · filtros · toggle de vista · navegación */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-gray-900">
-          {MESES[view.month]} {view.year}
-        </h2>
+        <h2 className="text-lg font-semibold text-gray-900">{headerTitle}</h2>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Filtro por prioridad */}
@@ -214,7 +292,6 @@ export default function CalendarView({
 
                 {projectOpen && (
                   <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-gray-100 bg-white py-1 shadow-lg">
-                    {/* All projects */}
                     <button
                       type="button"
                       onClick={() => { toggleProject("all"); setProjectOpen(false); }}
@@ -281,7 +358,24 @@ export default function CalendarView({
         </div>
 
         <div className="flex items-center gap-2">
-          <button type="button" onClick={prevMonth} aria-label="Previous month" className={navBtn}>
+          {/* Month / Week segmented toggle */}
+          <div className="flex items-center overflow-hidden rounded-full border border-gray-200 text-xs font-medium">
+            {(["month", "week"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => toggleCalView(v)}
+                className={[
+                  "px-3 py-1 capitalize transition-colors duration-200 ease-out",
+                  calView === v ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-50",
+                ].join(" ")}
+              >
+                {v === "month" ? "Month" : "Week"}
+              </button>
+            ))}
+          </div>
+
+          <button type="button" onClick={prev} aria-label="Previous" className={navBtn}>
             ‹
           </button>
           <button
@@ -291,14 +385,16 @@ export default function CalendarView({
           >
             Today
           </button>
-          <button type="button" onClick={nextMonth} aria-label="Next month" className={navBtn}>
+          <button type="button" onClick={next} aria-label="Next" className={navBtn}>
             ›
           </button>
         </div>
       </div>
 
       {!hasVisibleTasks && (
-        <p className="mb-4 text-center text-sm text-gray-500">No tasks with a deadline this month</p>
+        <p className="mb-4 text-center text-sm text-gray-500">
+          No tasks with a deadline this {calView === "week" ? "week" : "month"}
+        </p>
       )}
 
       {/* Contenedor del grid */}
@@ -312,20 +408,24 @@ export default function CalendarView({
           ))}
         </div>
 
-        {/* Grid del mes */}
+        {/* Grid: month = multi-row with padding; week = single row, no padding */}
         <div className="grid grid-cols-7 gap-2">
           {cells.map((cell) => {
             const isToday = cell.str === todayStr;
             const dayTasks = tasksFor(cell.str);
-            const showAll = dayTasks.length <= 3;
-            const visible = showAll ? dayTasks : dayTasks.slice(0, 2);
-            const extra = showAll ? 0 : dayTasks.length - 2;
+            // Week cells are taller so show more chips before collapsing.
+            const capLimit = calView === "week" ? 6 : 3;
+            const capVisible = calView === "week" ? 5 : 2;
+            const showAll = dayTasks.length <= capLimit;
+            const visible = showAll ? dayTasks : dayTasks.slice(0, capVisible);
+            const extra = showAll ? 0 : dayTasks.length - capVisible;
 
             return (
               <div
                 key={cell.str}
                 className={[
-                  "flex min-h-[120px] flex-col gap-1 rounded-lg border border-gray-100 p-2",
+                  "flex flex-col gap-1 rounded-lg border border-gray-100 p-2",
+                  calView === "week" ? "min-h-[240px]" : "min-h-[120px]",
                   isToday ? "bg-red-50/40" : "bg-white",
                 ].join(" ")}
               >
