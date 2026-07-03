@@ -39,8 +39,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "Subtask title is required" }, { status: 400 });
   }
 
+  const VALID_PRIORIDADES = ["High", "Medium", "Low"] as const;
+  type P = (typeof VALID_PRIORIDADES)[number];
+  const prioridad: P =
+    body?.prioridad !== undefined && VALID_PRIORIDADES.includes(body.prioridad)
+      ? (body.prioridad as P)
+      : "Medium";
+
   try {
-    const subtask = await createSubtask(params.id, title);
+    const subtask = await createSubtask(params.id, title, prioridad);
     return NextResponse.json({ subtask }, { status: 201 });
   } catch (err) {
     const detail = err instanceof Error ? err.message : "error desconocido";
