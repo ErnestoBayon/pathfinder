@@ -3,19 +3,14 @@ import { Suspense } from "react";
 import LogoutButton from "../components/LogoutButton";
 import TopNav from "../components/TopNav";
 import CalendarView, { type CalendarTask } from "../components/CalendarView";
-import FloatingChatBubble from "../components/FloatingChatBubble";
 import { createClient } from "@/lib/supabase/server";
-import { listProjects, listTasks, loadMessages } from "@/lib/store";
+import { listProjects, listTasks } from "@/lib/store";
 import { DEFAULT_PROJECT_COLOR } from "@/lib/colors";
 
 // Lee el estado fresco de Supabase en cada request.
 export const dynamic = "force-dynamic";
 
-export default async function CalendarPage({
-  searchParams,
-}: {
-  searchParams: { project?: string };
-}) {
+export default async function CalendarPage() {
   // Ruta protegida: sin sesión → /login.
   const supabase = createClient();
   const {
@@ -26,17 +21,6 @@ export default async function CalendarPage({
   // Proyectos del usuario (RLS) y sus tareas. listTasks va por service-role,
   // por eso solo pedimos las de proyectos que ya sabemos que son suyos.
   const projects = await listProjects();
-
-  // Validate ?project= against real project ids; undefined when absent or invalid.
-  const activeProject = searchParams.project
-    ? (projects.find((p) => p.id === searchParams.project) ?? null)
-    : null;
-
-  // If a valid project filter is active, fetch its PM chat history for the bubble.
-  const bubbleMessages = activeProject
-    ? await loadMessages(activeProject.id).catch(() => [])
-    : [];
-
   const perProject = await Promise.all(
     projects.map((p) => listTasks(p.id).catch(() => [])),
   );
@@ -62,32 +46,23 @@ export default async function CalendarPage({
   });
 
   return (
-    <>
-      <main className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
-        <header className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Pathfinder</p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">Calendar</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <TopNav />
-            <LogoutButton />
-          </div>
-        </header>
-
-        <div className="mt-10 rounded-2xl border border-line bg-surface p-6 shadow-note">
-          <Suspense>
-            <CalendarView tasksByDate={tasksByDate} />
-          </Suspense>
+    <main className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
+      <header className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Pathfinder</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">Calendar</h1>
         </div>
-      </main>
+        <div className="flex items-center gap-4">
+          <TopNav />
+          <LogoutButton />
+        </div>
+      </header>
 
-      {activeProject && (
-        <FloatingChatBubble
-          projectId={activeProject.id}
-          initialMessages={bubbleMessages}
-        />
-      )}
-    </>
+      <div className="mt-10 rounded-2xl border border-line bg-surface p-6 shadow-note">
+        <Suspense>
+          <CalendarView tasksByDate={tasksByDate} />
+        </Suspense>
+      </div>
+    </main>
   );
 }
