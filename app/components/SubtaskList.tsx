@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Subtask } from "@/lib/types";
+import type { Prioridad, Subtask } from "@/lib/types";
+import { PRIORIDAD_COLORS } from "@/lib/colors";
+
+const PRIORIDADES: Prioridad[] = ["High", "Medium", "Low"];
 
 // Lista de subtareas de una tarea. Vive embebida bajo el título (sin card propia):
 // barra de progreso, checklist con borrar-al-hover y un input para agregar.
@@ -19,6 +22,7 @@ export default function SubtaskList({
 }) {
   const [subtasks, setSubtasks] = useState<Subtask[]>(initialSubtasks ?? []);
   const [newTitle, setNewTitle] = useState("");
+  const [newPrioridad, setNewPrioridad] = useState<Prioridad>("Medium");
   const [loading, setLoading] = useState(false);
   // El banner de "todas completadas" se puede descartar; reaparece si vuelven a quedar
   // todas hechas tras desmarcar alguna.
@@ -75,6 +79,21 @@ export default function SubtaskList({
     }
   }
 
+  async function changePriority(sub: Subtask, next: Prioridad) {
+    const prev = subtasks;
+    setSubtasks((s) => s.map((x) => (x.id === sub.id ? { ...x, prioridad: next } : x)));
+    try {
+      const res = await fetch(`/api/subtasks/${sub.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prioridad: next }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setSubtasks(prev);
+    }
+  }
+
   async function remove(sub: Subtask) {
     const prev = subtasks;
     setSubtasks((s) => s.filter((x) => x.id !== sub.id));
@@ -95,7 +114,7 @@ export default function SubtaskList({
       const res = await fetch(`/api/tasks/${taskId}/subtasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({ title, prioridad: newPrioridad }),
       });
       const data = (await res.json()) as { subtask?: Subtask };
       if (res.ok && data.subtask) {
@@ -167,6 +186,22 @@ export default function SubtaskList({
               >
                 ✓
               </button>
+              {/* Priority pill — click cycles High → Medium → Low → High. */}
+              <button
+                type="button"
+                onClick={() => {
+                  const idx = PRIORIDADES.indexOf(sub.prioridad);
+                  void changePriority(sub, PRIORIDADES[(idx + 1) % PRIORIDADES.length]);
+                }}
+                style={{
+                  background: PRIORIDAD_COLORS[sub.prioridad].tint,
+                  color: PRIORIDAD_COLORS[sub.prioridad].textOn,
+                }}
+                className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium leading-none transition-all duration-200 ease-out hover:opacity-80"
+                title="Click to change priority"
+              >
+                {sub.prioridad}
+              </button>
               <span
                 className={[
                   "min-w-0 flex-1 break-words text-sm leading-snug transition-colors duration-200 ease-out",
@@ -196,6 +231,17 @@ export default function SubtaskList({
           subtasks.length > 0 ? "mt-1 border-t border-line pt-2" : "",
         ].join(" ")}
       >
+        <select
+          value={newPrioridad}
+          onChange={(e) => setNewPrioridad(e.target.value as Prioridad)}
+          className="shrink-0 rounded-md border border-line bg-surface px-1.5 py-1 text-xs text-ink outline-none transition-colors duration-200 ease-out focus:border-accent"
+        >
+          {PRIORIDADES.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
         <input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}

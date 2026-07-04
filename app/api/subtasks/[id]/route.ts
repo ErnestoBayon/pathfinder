@@ -49,6 +49,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     patch.title = title;
   }
 
+  if (body?.prioridad !== undefined) {
+    if (!["High", "Medium", "Low"].includes(body.prioridad)) {
+      return NextResponse.json(
+        { error: "prioridad must be 'High', 'Medium', or 'Low'" },
+        { status: 400 },
+      );
+    }
+    patch.prioridad = body.prioridad;
+  }
+
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
