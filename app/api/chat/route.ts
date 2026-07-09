@@ -345,9 +345,10 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => ({}));
+  const greet: boolean = body?.greet === true;
   const message: string = (body?.message ?? "").toString().trim();
   const projectId: string = (body?.projectId ?? "").toString();
-  if (!message) {
+  if (!greet && !message) {
     return NextResponse.json({ error: "message is required" }, { status: 400 });
   }
 
@@ -374,9 +375,19 @@ export async function POST(req: Request) {
     priorTurns = prior.map((m) => ({ role: m.role, content: m.content }));
   }
 
+  // Proactive greeting: inject a system-generated trigger instead of a user message.
+  // The trigger is never saved to the messages table — only the PM reply is persisted.
+  // This keeps the idempotency guard intact: once the reply is saved, initialMessages
+  // will be non-empty on all subsequent loads and the greet path won't fire again.
+  const GREET_TRIGGER =
+    "You're meeting this project for the first time. Look at its name and description, then call suggest_task once or twice to add 1–2 concrete starter tasks relevant to a Data Scientist's workflow. After using suggest_task, write a single casual sentence telling the user you've dropped some starter suggestions into the panel above. Keep it short and friendly — no lists, no headers.";
+
+  const userTurn: string = greet ? GREET_TRIGGER : message;
+
   // Persistimos el turno del usuario antes de llamar a Claude para que sobreviva
   // a recargas aunque el PM falle. (Silencioso si la tabla aún no existe.)
-  if (projectId) {
+  // Skip for greet: the trigger is internal, not a real user message.
+  if (projectId && !greet) {
     await saveMessage(projectId, "user", message).catch(() => {});
   }
 
@@ -386,7 +397,7 @@ export async function POST(req: Request) {
     const { reply, toolsUsed } = await runAgenticLoop(
       anthropic,
       system,
-      [...priorTurns, { role: "user", content: message }],
+      [...priorTurns, { role: "user", content: userTurn }],
       projectId,
     );
     if (projectId && reply) {

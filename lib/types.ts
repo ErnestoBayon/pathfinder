@@ -15,6 +15,8 @@ export interface Project {
   descripcion: string;
   /** Color de acento del proyecto (hex). Se usa en la card y su detalle. */
   color?: string;
+  /** true si es un proyecto de demo/seed; sus eventos no se registran en experiment_events. */
+  is_demo?: boolean;
   created_at?: string;
 }
 

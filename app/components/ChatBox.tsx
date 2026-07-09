@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Message } from "@/lib/types";
 import AgentAvatar from "./AgentAvatar";
 
@@ -13,10 +13,13 @@ export default function ChatBox({
   projectId,
   initialMessages = [],
   onTasksCreated,
+  proactiveGreet = false,
 }: {
   projectId?: string;
   initialMessages?: Message[];
   onTasksCreated?: () => void;
+  /** Fire a proactive PM greeting once on mount (only when chat history is empty). */
+  proactiveGreet?: boolean;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     initialMessages.map((m) => ({
@@ -29,6 +32,38 @@ export default function ChatBox({
   // Onboarding hint: solo se muestra en chat vacío y mientras no se descarte (sesión, sin persistir).
   const [hintDismissed, setHintDismissed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Guards against React Strict Mode double-invocation and any accidental re-mount.
+  const greetedRef = useRef(false);
+
+  useEffect(() => {
+    if (!proactiveGreet || !projectId || greetedRef.current) return;
+    greetedRef.current = true;
+
+    setSending(true);
+    fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ greet: true, projectId }),
+    })
+      .then((r) => r.json())
+      .then((data: { reply?: string; error?: string; toolsUsed?: boolean }) => {
+        if (data.toolsUsed) onTasksCreated?.();
+        setMessages((m) => [
+          ...m,
+          {
+            role: "pm" as const,
+            text: data.reply ?? "I added a couple of starter suggestions — check the panel above.",
+          },
+        ]);
+      })
+      .catch(() => {})
+      .finally(() => {
+        setSending(false);
+        scrollToBottom();
+      });
+    // Intentionally empty deps: this effect must run exactly once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function scrollToBottom() {
     window.requestAnimationFrame(() => {
