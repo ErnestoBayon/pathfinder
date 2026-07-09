@@ -1,6 +1,7 @@
 import HomeProjects from "../components/HomeProjects";
 import LogoutButton from "../components/LogoutButton";
 import TopNav from "../components/TopNav";
+import GuideButton from "../components/GuideButton";
 import { getProjectTaskCounts, listProjects } from "@/lib/store";
 
 // Lee el estado fresco de Supabase en cada request.
@@ -22,6 +23,7 @@ export default async function Home() {
         </div>
         <div className="flex items-center gap-4">
           <TopNav />
+          <GuideButton />
           <LogoutButton />
         </div>
       </header>
