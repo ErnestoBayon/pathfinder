@@ -51,7 +51,8 @@ export default function ChatBox({
       body: JSON.stringify({ greet: true, projectId }),
     })
       .then((r) => r.json())
-      .then((data: { reply?: string; error?: string; toolsUsed?: boolean }) => {
+      .then((data: { reply?: string; error?: string; toolsUsed?: boolean; noOp?: boolean }) => {
+        if (data.noOp) return; // Atomic claim was already taken — legitimate greet is running or done.
         if (data.reply) {
           if (data.toolsUsed) onTasksCreated?.();
           setMessages((m) => [...m, { role: "pm" as const, text: data.reply! }]);

@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import {
+  claimGreet,
   createSubtask,
   createTask,
   createSuggestedTask,
@@ -8,6 +9,7 @@ import {
   listSubtasks,
   listTasks,
   loadMessages,
+  resetGreet,
   saveMessage,
   updateTask,
   type TaskPatch,
@@ -359,6 +361,17 @@ export async function POST(req: Request) {
     if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Atomic claim: for greet requests, one UPDATE WHERE has_greeted=false RETURNING id
+  // ensures exactly one caller proceeds to the LLM even if many arrive concurrently
+  // (e.g. rapid reloads before the first greet's message is persisted).
+  // The losing request gets { noOp: true } — no LLM call, no suggest_task, no DB write.
+  if (greet) {
+    const claimed = await claimGreet(projectId).catch(() => false);
+    if (!claimed) {
+      return NextResponse.json({ noOp: true, toolsUsed: false });
+    }
+  }
+
   // Carga proyecto, tareas e historial persistido para darle contexto al PM.
   // El historial es la fuente de verdad de Supabase, no estado del cliente.
   let system = SYSTEM_PROMPT + `\n\nToday is ${new Date().toISOString().slice(0, 10)}.`;
@@ -405,6 +418,11 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ reply, toolsUsed });
   } catch (err) {
+    // If this was a greet and the claim succeeded, reset has_greeted so a future
+    // page load can retry. A transient API error shouldn't permanently block greets.
+    if (greet && projectId) {
+      await resetGreet(projectId).catch(() => {});
+    }
     const detail = err instanceof Error ? err.message : "unknown error";
     return NextResponse.json({ error: `Couldn't reach Claude: ${detail}` }, { status: 502 });
   }

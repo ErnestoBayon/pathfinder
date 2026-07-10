@@ -17,6 +17,8 @@ export interface Project {
   color?: string;
   /** true si es un proyecto de demo/seed; sus eventos no se registran en experiment_events. */
   is_demo?: boolean;
+  /** true once the proactive PM greet has been claimed; prevents duplicate greets on rapid reload. */
+  has_greeted?: boolean;
   created_at?: string;
 }
 
