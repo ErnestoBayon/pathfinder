@@ -305,6 +305,35 @@ export async function loadMessages(projectId: string): Promise<Message[]> {
   return (data ?? []) as Message[];
 }
 
+/**
+ * Atomic claim for the proactive PM greet. Sets has_greeted=true only if it is
+ * currently false (single UPDATE … WHERE has_greeted = false RETURNING id).
+ * Returns true if this call won the claim; false if another request already did.
+ * Uses the service-role client — ownership is validated by the caller before this runs.
+ */
+export async function claimGreet(projectId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("projects")
+    .update({ has_greeted: true })
+    .eq("id", projectId)
+    .eq("has_greeted", false)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).length > 0;
+}
+
+/**
+ * Resets has_greeted to false so a future page load can retry the greet.
+ * Called when the Claude call fails after a successful claimGreet(), so a
+ * transient API error doesn't permanently block future greets for this project.
+ */
+export async function resetGreet(projectId: string): Promise<void> {
+  await supabase
+    .from("projects")
+    .update({ has_greeted: false })
+    .eq("id", projectId);
+}
+
 /** Guarda un mensaje del chat (el id lo genera la base con gen_random_uuid). */
 export async function saveMessage(
   projectId: string,

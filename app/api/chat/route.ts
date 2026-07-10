@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import {
+  claimGreet,
   createSubtask,
   createTask,
   createSuggestedTask,
@@ -8,6 +9,7 @@ import {
   listSubtasks,
   listTasks,
   loadMessages,
+  resetGreet,
   saveMessage,
   updateTask,
   type TaskPatch,
@@ -345,9 +347,10 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => ({}));
+  const greet: boolean = body?.greet === true;
   const message: string = (body?.message ?? "").toString().trim();
   const projectId: string = (body?.projectId ?? "").toString();
-  if (!message) {
+  if (!greet && !message) {
     return NextResponse.json({ error: "message is required" }, { status: 400 });
   }
 
@@ -356,6 +359,17 @@ export async function POST(req: Request) {
   if (projectId) {
     const isOwner = await validateProjectOwnership(projectId, user.id);
     if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Atomic claim: for greet requests, one UPDATE WHERE has_greeted=false RETURNING id
+  // ensures exactly one caller proceeds to the LLM even if many arrive concurrently
+  // (e.g. rapid reloads before the first greet's message is persisted).
+  // The losing request gets { noOp: true } — no LLM call, no suggest_task, no DB write.
+  if (greet) {
+    const claimed = await claimGreet(projectId).catch(() => false);
+    if (!claimed) {
+      return NextResponse.json({ noOp: true, toolsUsed: false });
+    }
   }
 
   // Carga proyecto, tareas e historial persistido para darle contexto al PM.
@@ -374,9 +388,19 @@ export async function POST(req: Request) {
     priorTurns = prior.map((m) => ({ role: m.role, content: m.content }));
   }
 
+  // Proactive greeting: inject a system-generated trigger instead of a user message.
+  // The trigger is never saved to the messages table — only the PM reply is persisted.
+  // This keeps the idempotency guard intact: once the reply is saved, initialMessages
+  // will be non-empty on all subsequent loads and the greet path won't fire again.
+  const GREET_TRIGGER =
+    "You're meeting this project for the first time. Look at its name and description, then call suggest_task once or twice to add 1–2 concrete starter tasks relevant to a Data Scientist's workflow. After using suggest_task, write a single casual sentence telling the user you've dropped some starter suggestions into the panel above. Keep it short and friendly — no lists, no headers.";
+
+  const userTurn: string = greet ? GREET_TRIGGER : message;
+
   // Persistimos el turno del usuario antes de llamar a Claude para que sobreviva
   // a recargas aunque el PM falle. (Silencioso si la tabla aún no existe.)
-  if (projectId) {
+  // Skip for greet: the trigger is internal, not a real user message.
+  if (projectId && !greet) {
     await saveMessage(projectId, "user", message).catch(() => {});
   }
 
@@ -386,7 +410,7 @@ export async function POST(req: Request) {
     const { reply, toolsUsed } = await runAgenticLoop(
       anthropic,
       system,
-      [...priorTurns, { role: "user", content: message }],
+      [...priorTurns, { role: "user", content: userTurn }],
       projectId,
     );
     if (projectId && reply) {
@@ -394,6 +418,11 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ reply, toolsUsed });
   } catch (err) {
+    // If this was a greet and the claim succeeded, reset has_greeted so a future
+    // page load can retry. A transient API error shouldn't permanently block greets.
+    if (greet && projectId) {
+      await resetGreet(projectId).catch(() => {});
+    }
     const detail = err instanceof Error ? err.message : "unknown error";
     return NextResponse.json({ error: `Couldn't reach Claude: ${detail}` }, { status: 502 });
   }

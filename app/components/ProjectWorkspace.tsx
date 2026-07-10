@@ -52,6 +52,7 @@ export default function ProjectWorkspace({
             projectId={projectId}
             initialMessages={initialMessages}
             onTasksCreated={bumpTasks}
+            proactiveGreet={initialMessages.length === 0}
           />
         </section>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Message } from "@/lib/types";
 import AgentAvatar from "./AgentAvatar";
 
@@ -13,10 +13,13 @@ export default function ChatBox({
   projectId,
   initialMessages = [],
   onTasksCreated,
+  proactiveGreet = false,
 }: {
   projectId?: string;
   initialMessages?: Message[];
   onTasksCreated?: () => void;
+  /** Fire a proactive PM greeting once on mount (only when chat history is empty). */
+  proactiveGreet?: boolean;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     initialMessages.map((m) => ({
@@ -29,6 +32,46 @@ export default function ChatBox({
   // Onboarding hint: solo se muestra en chat vacío y mientras no se descarte (sesión, sin persistir).
   const [hintDismissed, setHintDismissed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Guards against React Strict Mode double-invocation and any accidental re-mount.
+  const greetedRef = useRef(false);
+
+  useEffect(() => {
+    if (!proactiveGreet || !projectId || greetedRef.current) return;
+    // Set true BEFORE the fetch so Strict Mode's second synchronous invoke
+    // sees ref=true and short-circuits. Reset to false on failure so a
+    // genuine remount (navigate away → back) can retry.
+    greetedRef.current = true;
+
+    const FALLBACK = "I had trouble loading suggestions — try sending me a message and I'll take a look.";
+
+    setSending(true);
+    fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ greet: true, projectId }),
+    })
+      .then((r) => r.json())
+      .then((data: { reply?: string; error?: string; toolsUsed?: boolean; noOp?: boolean }) => {
+        if (data.noOp) return; // Atomic claim was already taken — legitimate greet is running or done.
+        if (data.reply) {
+          if (data.toolsUsed) onTasksCreated?.();
+          setMessages((m) => [...m, { role: "pm" as const, text: data.reply! }]);
+        } else {
+          greetedRef.current = false;
+          setMessages((m) => [...m, { role: "pm" as const, text: FALLBACK }]);
+        }
+      })
+      .catch(() => {
+        greetedRef.current = false;
+        setMessages((m) => [...m, { role: "pm" as const, text: FALLBACK }]);
+      })
+      .finally(() => {
+        setSending(false);
+        scrollToBottom();
+      });
+    // Intentionally empty deps: this effect must run exactly once per mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function scrollToBottom() {
     window.requestAnimationFrame(() => {

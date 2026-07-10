@@ -118,37 +118,48 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const task = await updateTask(params.id, patch);
 
     // Instrumentación del experimento: registra los cambios relevantes.
+    // Opción B: PK lookup separado en lugar de join PostgREST (Opción A), porque
+    // este proyecto usa TEXT ids y no podemos garantizar que la FK esté registrada
+    // en el schema cache de PostgREST. La query es O(log n) sobre el PK indexado.
     if (prev) {
-      const base = { user_id: user.id, task_id: params.id, project_id: prev.project_id };
-      const events: ExperimentEvent[] = [];
+      const { data: projRow } = await supabase
+        .from("projects")
+        .select("is_demo")
+        .eq("id", prev.project_id)
+        .maybeSingle();
 
-      if (task.estado !== prev.estado) {
-        events.push({
-          ...base,
-          event_type: "status_changed",
-          previous_value: prev.estado,
-          new_value: task.estado,
-        });
-        if (task.estado === "done") {
+      if (!projRow?.is_demo) {
+        const base = { user_id: user.id, task_id: params.id, project_id: prev.project_id };
+        const events: ExperimentEvent[] = [];
+
+        if (task.estado !== prev.estado) {
           events.push({
             ...base,
-            event_type: "task_completed",
+            event_type: "status_changed",
             previous_value: prev.estado,
             new_value: task.estado,
           });
+          if (task.estado === "done") {
+            events.push({
+              ...base,
+              event_type: "task_completed",
+              previous_value: prev.estado,
+              new_value: task.estado,
+            });
+          }
         }
-      }
 
-      if (task.prioridad !== prev.prioridad) {
-        events.push({
-          ...base,
-          event_type: "priority_changed",
-          previous_value: prev.prioridad,
-          new_value: task.prioridad,
-        });
-      }
+        if (task.prioridad !== prev.prioridad) {
+          events.push({
+            ...base,
+            event_type: "priority_changed",
+            previous_value: prev.prioridad,
+            new_value: task.prioridad,
+          });
+        }
 
-      await logTaskEvents(events);
+        await logTaskEvents(events);
+      }
     }
 
     return NextResponse.json({ task });
