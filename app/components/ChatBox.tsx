@@ -37,7 +37,12 @@ export default function ChatBox({
 
   useEffect(() => {
     if (!proactiveGreet || !projectId || greetedRef.current) return;
+    // Set true BEFORE the fetch so Strict Mode's second synchronous invoke
+    // sees ref=true and short-circuits. Reset to false on failure so a
+    // genuine remount (navigate away → back) can retry.
     greetedRef.current = true;
+
+    const FALLBACK = "I had trouble loading suggestions — try sending me a message and I'll take a look.";
 
     setSending(true);
     fetch("/api/chat", {
@@ -47,21 +52,23 @@ export default function ChatBox({
     })
       .then((r) => r.json())
       .then((data: { reply?: string; error?: string; toolsUsed?: boolean }) => {
-        if (data.toolsUsed) onTasksCreated?.();
-        setMessages((m) => [
-          ...m,
-          {
-            role: "pm" as const,
-            text: data.reply ?? "I added a couple of starter suggestions — check the panel above.",
-          },
-        ]);
+        if (data.reply) {
+          if (data.toolsUsed) onTasksCreated?.();
+          setMessages((m) => [...m, { role: "pm" as const, text: data.reply! }]);
+        } else {
+          greetedRef.current = false;
+          setMessages((m) => [...m, { role: "pm" as const, text: FALLBACK }]);
+        }
       })
-      .catch(() => {})
+      .catch(() => {
+        greetedRef.current = false;
+        setMessages((m) => [...m, { role: "pm" as const, text: FALLBACK }]);
+      })
       .finally(() => {
         setSending(false);
         scrollToBottom();
       });
-    // Intentionally empty deps: this effect must run exactly once on mount.
+    // Intentionally empty deps: this effect must run exactly once per mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
