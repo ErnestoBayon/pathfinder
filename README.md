@@ -4,7 +4,7 @@ A lightweight AI task manager for Data Scientists — with a PM-agent chat that 
 
 **Live demo:** [pathfinder-eight-swart.vercel.app](https://pathfinder-eight-swart.vercel.app)
 
-<!-- SCREENSHOT/GIF PLACEHOLDER: drop a product screenshot or demo GIF here, e.g. ![Pathfinder demo](./docs/demo.gif) -->
+![Approving an AI suggestion in Pathfinder](./docs/demo-overview.gif)
 
 ## Stack
 
@@ -26,6 +26,9 @@ Pathfinder is three things at once:
 - Sign up / log in and create projects to organize your work
 - Create, update, and complete tasks and subtasks within a project, with priority levels (high/medium/low) and due dates
 - Board (Kanban: To Do / In Progress / Done) and calendar views per project
+
+  ![Kanban board view](./docs/demo-board.gif)
+
 - Chat with a Claude-powered PM agent that, via tool use, can create tasks, suggest new tasks for you to approve or reject, update task status/priority, and list existing tasks and subtasks
 
 ## Research
