@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>dblzero labs — a to-do app with a project manager built in</title>
+  <meta name="description" content="dblzero is a to-do app with a project manager built in. The manager is an AI: it reads your tasks, sets the order, and tells you what to do next. Open source. We test our claims and publish the results.">
+
+  <!-- Canonical: currently the Vercel app URL. Update once the domain is registered. -->
+  <link rel="canonical" href="https://pathfinder-eight-swart.vercel.app/">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="dblzero labs">
+  <meta property="og:title" content="dblzero labs — a to-do app with a project manager built in">
+  <meta property="og:description" content="The manager is an AI. It reads your tasks, sets the order, and tells you what to do next.">
+  <meta property="og:url" content="https://pathfinder-eight-swart.vercel.app/">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="dblzero labs — a to-do app with a project manager built in">
+  <meta name="twitter:description" content="The manager is an AI. It reads your tasks, sets the order, and tells you what to do next.">
+
+  <meta name="theme-color" content="#060606">
+
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "dblzero",
+    "applicationCategory": "BusinessApplication",
+    "applicationSubCategory": "Task Management",
+    "operatingSystem": "Web",
+    "url": "https://pathfinder-eight-swart.vercel.app/",
+    "sameAs": ["https://github.com/ErnestoBayon/pathfinder"],
+    "author": {
+      "@type": "Organization",
+      "name": "dblzero labs",
+      "founder": {
+        "@type": "Person",
+        "name": "Ernesto Bayon"
+      },
+      "location": {
+        "@type": "Place",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Los Angeles",
+          "addressRegion": "CA",
+          "addressCountry": "US"
+        }
+      }
+    },
+    "description": "A to-do app with a project manager built in. The manager is an AI: it reads your tasks, sets the order, and suggests what to do next. Its task ordering is being tested in a registered experiment, with results published either way.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #060606;
+      --bg-panel: #0A0A09;
+      --bg-raise: #0C0C0B;
+      --ink: #EDEDE4;
+      --dim: #A8A89C;
+      --faint: #7A7A70;
+      --ghost: #4A4A42;
+      --line: rgba(237, 237, 228, 0.12);
+      --line-strong: rgba(237, 237, 228, 0.24);
+      --accent: #E8FF47;
+      --accent-dim: rgba(232, 255, 71, 0.45);
+      --accent-faint: rgba(232, 255, 71, 0.07);
+      --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --max: 960px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-weight: 400;
+      font-size: 14.5px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+
+    /* CRT scanline texture — deliberately near-invisible */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(255, 255, 255, 0.016) 0px,
+        rgba(255, 255, 255, 0.016) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+    }
+
+    ::selection { background: var(--accent); color: #060606; }
+
+    a { color: inherit; text-decoration: none; }
+    a:focus-visible, button:focus-visible {
+      outline: 1px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .wrap { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+
+    .mono { font-family: var(--mono); }
+
+    /* ---------- Reveal on scroll ---------- */
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.8s cubic-bezier(0.2, 0.6, 0.2, 1),
+                  transform 0.8s cubic-bezier(0.2, 0.6, 0.2, 1);
+    }
+    .reveal.in { opacity: 1; transform: none; }
+    .reveal.d1 { transition-delay: 0.1s; }
+    .reveal.d2 { transition-delay: 0.2s; }
+    .reveal.d3 { transition-delay: 0.3s; }
+
+    /* ---------- Dot-matrix type (the signature) ---------- */
+    .dm { display: inline-block; vertical-align: middle; }
+    .dmx svg { display: block; height: 100%; width: auto; }
+    .dmx { display: inline-block; font-family: var(--mono); }
+
+    /* ---------- Type scale (small, quiet) ---------- */
+    h1, h2, h3 {
+      font-family: var(--mono);
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+
+    h2 {
+      font-size: clamp(18px, 2.2vw, 25px);
+      line-height: 1.3;
+      max-width: 22em;
+    }
+
+    .lede {
+      font-size: 14px;
+      color: var(--dim);
+      max-width: 34em;
+      margin-top: 18px;
+    }
+
+    .label {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 56px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+    .label .dmx { height: 15px; color: var(--accent); }
+    .label .rule { flex: 1; height: 1px; background: var(--line); }
+
+    /* ---------- Buttons ---------- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 12px 22px;
+      border: 1px solid var(--line-strong);
+      border-radius: 0;
+      background: transparent;
+      color: var(--ink);
+      transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn:hover { border-color: var(--accent-dim); color: var(--accent); }
+    .btn-solid {
+      background: var(--accent);
+      color: #060606;
+      border-color: var(--accent);
+    }
+    .btn-solid:hover {
+      background: #F3FF7A;
+      border-color: #F3FF7A;
+      color: #060606;
+      box-shadow: 0 0 24px rgba(232, 255, 71, 0.22);
+    }
+    .btn .arrow { transition: transform 0.2s ease; display: inline-block; }
+    .btn:hover .arrow { transform: translateX(3px); }
+    .btn-sm { font-size: 11px; padding: 10px 16px; }
+
+    /* ---------- Nav ---------- */
+    .nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      background: rgba(6, 6, 6, 0.6);
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.3s ease, background 0.3s ease;
+    }
+    .nav.scrolled {
+      background: rgba(6, 6, 6, 0.86);
+      border-bottom-color: var(--line);
+    }
+    .nav-inner {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .wordmark {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-family: var(--mono);
+      font-size: 13.5px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: lowercase;
+    }
+    .wordmark .dm { flex: none; }
+    .wordmark .wm-sl, .hc-brand .wm-sl { color: var(--accent); font-weight: 500; }
+    .wordmark .wm-labs, .hc-brand .wm-labs { color: var(--dim); font-weight: 500; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--dim);
+    }
+    .nav-links a { transition: color 0.2s ease; }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-links a .pfx { color: var(--faint); }
+    .nav-cta { font-size: 11px; padding: 8px 14px; }
+    @media (max-width: 700px) {
+      .nav-links a:not(.nav-cta) { display: none; }
+    }
+
+    /* ---------- Hero — full-viewport poster (fig.01) ----------
+       BOOOCI structure: the artwork owns the center; every word
+       is small and pinned to an edge or a corner. */
+    .hero {
+      position: relative;
+      height: 100svh;
+      min-height: 640px;
+      overflow: hidden;
+      background-image: radial-gradient(rgba(237, 237, 228, 0.035) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 46% 42% at 50% 46%, var(--accent-faint) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* centerpiece artwork */
+    .hero-art {
+      position: absolute;
+      top: 47%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(1180px, 96vw);
+      height: min(74svh, 700px);
+    }
+    .hero-drift { animation: hdrift 18s ease-in-out infinite alternate; }
+    @keyframes hdrift {
+      from { transform: translate(-5px, 3px); }
+      to   { transform: translate(5px, -4px); }
+    }
+    /* moving beads along selected threads — data in motion */
+    .tflow { animation: tflow 7s linear infinite; }
+    @keyframes tflow { to { stroke-dashoffset: -180; } }
+
+    /* TL under nav: typed command */
+    .cmdline {
+      position: absolute;
+      top: 84px;
+      left: 32px;
+      z-index: 3;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent);
+      display: flex;
+      align-items: baseline;
+    }
+    .cmdline .host { color: var(--faint); margin-right: 10px; }
+    .cmdline .typed {
+      overflow: hidden;
+      white-space: nowrap;
+      width: 14ch;
+      animation: typing 1.2s steps(14, end) 0.4s both;
+    }
+    @keyframes typing { from { width: 0ch; } to { width: 14ch; } }
+
+    /* vertical edge captions */
+    .hv {
+      position: absolute;
+      top: 50%;
+      z-index: 3;
+      font-family: var(--mono);
+      font-size: 9.5px;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--ghost);
+      writing-mode: vertical-rl;
+      white-space: nowrap;
+      animation: fadein 1.2s ease 0.5s both;
+    }
+    .hv-l { left: 30px; transform: translateY(-50%) rotate(180deg); }
+    .hv-r { right: 30px; transform: translateY(-50%); }
+    @keyframes fadein { from { opacity: 0; } }
+
+    /* bottom-left corner block: mark, wordmark, headline, CTAs */
+    .hero-corner {
+      position: absolute;
+      left: 32px;
+      bottom: 42px;
+      z-index: 3;
+      max-width: 480px;
+    }
+    .hero-corner::before {
+      content: "";
+      position: absolute;
+      inset: -56px -80px -42px -32px;
+      background: radial-gradient(ellipse at 24% 82%, rgba(6, 6, 6, 0.88) 0%, rgba(6, 6, 6, 0.5) 55%, transparent 80%);
+      z-index: -1;
+      pointer-events: none;
+    }
+    .hc-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: lowercase;
+    }
+    .hc-brand .dm { width: 30px; height: 19px; flex: none; }
+    .hero h1 {
+      margin-top: 20px;
+      font-size: clamp(17px, 1.6vw, 21px);
+      font-weight: 500;
+      line-height: 1.45;
+      letter-spacing: -0.01em;
+      max-width: 22em;
+    }
+    .hero h1 .m { color: var(--accent); }
+    .caret {
+      display: inline-block;
+      width: 0.5em; height: 0.9em;
+      background: var(--accent);
+      vertical-align: -0.06em;
+      margin-left: 0.2em;
+      animation: blink 1.1s steps(1) infinite;
+    }
+    @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+    .hc-sub {
+      margin-top: 12px;
+      font-size: 13.5px;
+      color: var(--dim);
+      max-width: 34em;
+    }
+    .hc-ctas {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+    .hero-corner .btn:not(.btn-solid) { background: rgba(6, 6, 6, 0.72); }
+
+    /* bottom-right corner: figure micro-specs */
+    .hero-fig {
+      position: absolute;
+      right: 32px;
+      bottom: 42px;
+      z-index: 3;
+      text-align: right;
+      font-family: var(--mono);
+      font-size: 9.5px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ghost);
+      line-height: 2.2;
+    }
+    .hero-fig span { display: block; }
+    .hero-fig .hf-title { color: var(--faint); }
+
+    @media (max-width: 760px) {
+      .hv, .hero-fig { display: none; }
+      .cmdline { top: 76px; left: 20px; }
+      .hero-art {
+        width: 150vw;
+        height: 70svh;
+        top: 42%;
+        opacity: 0.4;
+      }
+      .hero-corner { left: 20px; right: 20px; bottom: 30px; max-width: none; }
+    }
+
+    /* ---------- Sections ---------- */
+    section { position: relative; }
+    .section-pad { padding: 190px 0; }
+    .section-pad-sm { padding: 120px 0; }
+    .hairline-top { border-top: 1px solid var(--line); }
+
+    /* figure margin caption (used by network view) */
+    .term-mg {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 8px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ghost);
+    }
+
+    /* How it works */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 56px;
+      margin-top: 72px;
+    }
+    .step .dmx {
+      display: block;
+      height: 18px;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+    .step .dmx svg { margin: 0; }
+    .step p { font-size: 14px; color: var(--ink); max-width: 20em; }
+    .step p .sub { color: var(--dim); }
+    @media (max-width: 760px) {
+      .steps { grid-template-columns: 1fr; gap: 40px; }
+    }
+
+    /* Philosophy */
+    .principles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 56px;
+      margin-top: 96px;
+    }
+    .principle .num {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: var(--faint);
+      margin-bottom: 18px;
+      display: block;
+    }
+    .principle h3 { font-size: 15px; margin-bottom: 8px; }
+    .principle p { font-size: 13.5px; color: var(--dim); }
+    @media (max-width: 760px) {
+      .principles { grid-template-columns: 1fr; gap: 44px; }
+    }
+
+    /* ---------- Product grid ---------- */
+    .grid4 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 96px;
+    }
+    .bcard {
+      background: var(--bg-panel);
+      border: 1px solid var(--line);
+      padding: 36px 34px 34px;
+      transition: border-color 0.25s ease, background 0.25s ease;
+    }
+    .bcard:hover { border-color: var(--accent-dim); background: var(--bg-raise); }
+    .bcard .idx {
+      display: block;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ghost);
+      margin-bottom: 26px;
+    }
+    .bcard h3 { font-size: 15px; margin-bottom: 8px; }
+    .bcard p { font-size: 13.5px; color: var(--dim); max-width: 28em; }
+    @media (max-width: 640px) {
+      .grid4 { grid-template-columns: 1fr; }
+    }
+
+    /* ---------- Network view (fig.02) ---------- */
+    .h2row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--accent-dim);
+      padding: 6px 10px;
+      white-space: nowrap;
+    }
+    .chip-dot {
+      width: 5px; height: 5px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: blink 1.4s steps(1) infinite;
+    }
+    .netfig { margin-top: 72px; }
+    .net-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      background:
+        radial-gradient(rgba(237, 237, 228, 0.03) 1px, transparent 1px) 0 0 / 24px 24px,
+        var(--bg-panel);
+      border: 1px solid var(--line);
+    }
+    .net-cap {
+      margin-top: 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ghost);
+    }
+    .npulse {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: npulse 2.6s ease-out infinite;
+    }
+    @keyframes npulse {
+      0%   { transform: scale(0.35); opacity: 0.9; }
+      70%  { transform: scale(1.5);  opacity: 0; }
+      100% { transform: scale(1.5);  opacity: 0; }
+    }
+
+    /* Research */
+    .research { background: var(--bg-raise); }
+    .rlines {
+      margin-top: 72px;
+      font-family: var(--mono);
+      font-size: 13.5px;
+      line-height: 2.4;
+      color: var(--dim);
+    }
+    .rlines .ln { display: block; }
+    .rlines .prompt { color: var(--accent); margin-right: 12px; }
+    .rnote {
+      margin-top: 26px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.02em;
+      color: var(--ghost);
+    }
+    .manifesto {
+      margin-top: 88px;
+      padding-top: 32px;
+      border-top: 1px dashed var(--line);
+      font-family: var(--mono);
+      font-size: clamp(15px, 1.8vw, 19px);
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+    .manifesto .acc { color: var(--accent); }
+
+    /* ---------- Spec plate ---------- */
+    .plate {
+      background: var(--accent);
+      color: #0A0A09;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      padding: clamp(28px, 4vw, 44px) clamp(24px, 4vw, 48px);
+      margin-top: 72px;
+    }
+    .plate ::selection { background: #0A0A09; color: var(--accent); }
+    .plate .dm { --dm-main: #0A0A09; --dm-acc: rgba(6, 6, 6, 0.42); }
+    .plate-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+    .plate-mark { display: flex; align-items: center; gap: 14px; }
+    .plate-mark .dm { width: 46px; height: 29px; flex: none; }
+    .plate-word {
+      font-size: clamp(16px, 2vw, 21px);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: lowercase;
+    }
+    .plate-no { font-size: 11px; letter-spacing: 0.14em; text-align: right; line-height: 1.8; }
+    .plate-rows {
+      margin-top: clamp(24px, 3.4vw, 38px);
+      text-align: right;
+      font-size: clamp(12px, 1.5vw, 15px);
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      line-height: 2.1;
+    }
+    .prow.big {
+      font-size: clamp(19px, 2.8vw, 31px);
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      line-height: 1.25;
+      margin: 8px 0;
+    }
+    .plate-note {
+      margin-top: 16px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 1.8;
+      color: var(--faint);
+      max-width: 44em;
+    }
+
+    /* Final CTA */
+    .final { text-align: center; padding: 210px 0 190px; }
+    .final::before {
+      content: "";
+      position: absolute;
+      bottom: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 760px; height: 380px;
+      background: radial-gradient(ellipse at bottom, var(--accent-faint) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .final .dm-word {
+      display: flex;
+      justify-content: center;
+      color: var(--accent);
+      margin-bottom: 48px;
+    }
+    .final .dm-word .dmx { height: clamp(40px, 7vw, 62px); }
+    .final p.closer {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--dim);
+    }
+    .final-ctas {
+      display: flex;
+      gap: 14px;
+      margin-top: 44px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* ---------- Pattern band (one quiet line) ---------- */
+    .band {
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      overflow: hidden;
+      padding: 11px 0;
+      background: var(--bg-panel);
+    }
+    .band-track {
+      display: flex;
+      width: max-content;
+      animation: bandslide 110s linear infinite;
+    }
+    .band-seq {
+      display: flex;
+      align-items: center;
+      gap: 40px;
+      padding-right: 40px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ghost);
+      white-space: nowrap;
+    }
+    .band-seq .acc { color: var(--accent-dim); }
+    .band-seq .dm { width: 22px; height: 14px; opacity: 0.5; }
+    @keyframes bandslide { to { transform: translateX(-50%); } }
+
+    /* ---------- Footer ---------- */
+    footer { border-top: 1px solid var(--line); }
+    .statusbar {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px 24px;
+      flex-wrap: wrap;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--faint);
+    }
+    .statusbar .seg { display: flex; align-items: center; gap: 10px; }
+    .statusbar .badge {
+      background: var(--accent);
+      color: #060606;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: lowercase;
+      padding: 2px 8px;
+    }
+    .statusbar a { transition: color 0.2s ease; }
+    .statusbar a:hover { color: var(--accent); }
+    .statusbar .sep { color: var(--line-strong); }
+
+    /* Easter egg — the 00 at the very bottom */
+    .egg {
+      text-align: center;
+      padding: 34px 24px 26px;
+    }
+    .egg-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px;
+      opacity: 0.35;
+      transition: opacity 0.3s ease;
+    }
+    .egg-btn .dm { width: 24px; height: 15px; display: block; }
+    .egg-btn:hover, .egg.open .egg-btn { opacity: 0.8; }
+    .bond {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.04em;
+      color: var(--ghost);
+      margin-top: 10px;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    .egg:hover .bond, .egg.open .bond, .egg-btn:focus-visible ~ .bond { opacity: 1; }
+
+    /* ---------- Reduced motion ---------- */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+      .cmdline .typed { animation: none; width: auto; }
+      .caret { animation: none; }
+      .hv { animation: none; opacity: 1; }
+      .btn, .btn .arrow { transition: none; }
+      .bcard { transition: none; }
+      .band-track { animation: none; }
+      .hero-drift { animation: none; }
+      .tflow { animation: none; }
+      .chip-dot { animation: none; }
+      .npulse { animation: none; opacity: 0.3; transform: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============ SHARED SYMBOL: dot-matrix double-zero mark ============ -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- Dot-matrix double-zero: each glyph a 5x7 dot grid, slash rendered in accent dots -->
+      <symbol id="dm00" viewBox="0 0 11 7">
+        <g style="fill: var(--dm-main, #EDEDE4)">
+          <circle cx="1.5" cy="0.5" r="0.33"/><circle cx="2.5" cy="0.5" r="0.33"/><circle cx="3.5" cy="0.5" r="0.33"/>
+          <circle cx="1.5" cy="6.5" r="0.33"/><circle cx="2.5" cy="6.5" r="0.33"/><circle cx="3.5" cy="6.5" r="0.33"/>
+          <circle cx="0.5" cy="1.5" r="0.33"/><circle cx="0.5" cy="2.5" r="0.33"/><circle cx="0.5" cy="3.5" r="0.33"/><circle cx="0.5" cy="4.5" r="0.33"/><circle cx="0.5" cy="5.5" r="0.33"/>
+          <circle cx="4.5" cy="1.5" r="0.33"/><circle cx="4.5" cy="2.5" r="0.33"/><circle cx="4.5" cy="3.5" r="0.33"/><circle cx="4.5" cy="4.5" r="0.33"/><circle cx="4.5" cy="5.5" r="0.33"/>
+          <circle cx="7.5" cy="0.5" r="0.33"/><circle cx="8.5" cy="0.5" r="0.33"/><circle cx="9.5" cy="0.5" r="0.33"/>
+          <circle cx="7.5" cy="6.5" r="0.33"/><circle cx="8.5" cy="6.5" r="0.33"/><circle cx="9.5" cy="6.5" r="0.33"/>
+          <circle cx="6.5" cy="1.5" r="0.33"/><circle cx="6.5" cy="2.5" r="0.33"/><circle cx="6.5" cy="3.5" r="0.33"/><circle cx="6.5" cy="4.5" r="0.33"/><circle cx="6.5" cy="5.5" r="0.33"/>
+          <circle cx="10.5" cy="1.5" r="0.33"/><circle cx="10.5" cy="2.5" r="0.33"/><circle cx="10.5" cy="3.5" r="0.33"/><circle cx="10.5" cy="4.5" r="0.33"/><circle cx="10.5" cy="5.5" r="0.33"/>
+        </g>
+        <g style="fill: var(--dm-acc, #E8FF47)">
+          <circle cx="3.5" cy="2.5" r="0.33"/><circle cx="2.5" cy="3.5" r="0.33"/><circle cx="1.5" cy="4.5" r="0.33"/>
+          <circle cx="9.5" cy="2.5" r="0.33"/><circle cx="8.5" cy="3.5" r="0.33"/><circle cx="7.5" cy="4.5" r="0.33"/>
+        </g>
+      </symbol>
+    </defs>
+  </svg>
+
+  <!-- ================= NAV ================= -->
+  <header class="nav" id="nav">
+    <nav class="nav-inner" aria-label="Main">
+      <a href="#top" class="wordmark" aria-label="dblzero labs home">
+        <svg class="dm" viewBox="0 0 11 7" width="24" height="15" aria-hidden="true"><use href="#dm00"/></svg>
+        dblzero<span class="wm-sl">//</span><span class="wm-labs">labs</span>
+      </a>
+      <div class="nav-links">
+        <a href="#product"><span class="pfx">./</span>product</a>
+        <a href="#research"><span class="pfx">./</span>research</a>
+        <a href="https://github.com/ErnestoBayon/pathfinder" rel="noopener"><span class="pfx">./</span>github</a>
+        <a href="https://pathfinder-eight-swart.vercel.app" rel="noopener" class="btn btn-solid nav-cta">Try dblzero</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+
+    <!-- ================= HERO — full-viewport poster (fig.01) =================
+         Center: generative artwork — tasks flow in on the left, the manager
+         orders them on the right; tracking annotations lock onto the field.
+         All copy lives at the edges. -->
+    <section class="hero" aria-label="dblzero hero — generative artwork of tasks being ordered and tracked, with content at the edges">
+
+      <!-- centerpiece: task-ordering thread field + motion-tracking annotations (built by JS) -->
+      <svg class="hero-art" viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <!-- ready-made duotone for a future real product screenshot:
+               desaturates, crushes shadows to the page black, lifts highlights
+               toward the accent so the shot sits inside the artwork -->
+          <filter id="productDuotone" color-interpolation-filters="sRGB">
+            <feColorMatrix type="saturate" values="0"/>
+            <feComponentTransfer>
+              <feFuncR type="table" tableValues="0.024 0.85"/>
+              <feFuncG type="table" tableValues="0.024 0.95"/>
+              <feFuncB type="table" tableValues="0.024 0.42"/>
+            </feComponentTransfer>
+          </filter>
+        </defs>
+        <g class="hero-drift">
+          <g id="haScatter"></g>
+          <g id="haThreads"></g>
+          <!-- product-shot slot: base64 image + duotone filter goes here -->
+          <!-- e.g. <image href="data:image/png;base64,..." x="430" y="230" width="340" height="300" filter="url(#productDuotone)" opacity="0.9"/> — the trackers can then lock onto real UI elements -->
+          <g id="haNodes"></g>
+          <g id="haAnno"></g>
+        </g>
+      </svg>
+
+      <!-- TL under nav: typed command -->
+      <p class="cmdline reveal" aria-hidden="true"><span class="host">~/work&nbsp;$</span><span class="typed">dblzero --next</span></p>
+
+      <!-- vertical edge captions -->
+      <span class="hv hv-l" aria-hidden="true">Where work meets order.</span>
+      <span class="hv hv-r" aria-hidden="true">Management in its elementary form.</span>
+
+      <!-- bottom-left corner block -->
+      <div class="hero-corner">
+        <div class="hc-brand reveal" aria-label="dblzero labs">
+          <svg class="dm" viewBox="0 0 11 7" aria-hidden="true"><use href="#dm00"/></svg>
+          dblzero<span class="wm-sl">//</span><span class="wm-labs">labs</span>
+        </div>
+        <h1 class="reveal d1">A to-do app with a <span class="m">project manager built in.</span><span class="caret" aria-hidden="true"></span></h1>
+        <p class="hc-sub reveal d2">The manager is an AI. It reads your tasks, sets the order, and tells you what to do next.</p>
+        <div class="hc-ctas reveal d3">
+          <a class="btn btn-solid btn-sm" href="https://pathfinder-eight-swart.vercel.app" rel="noopener">Try dblzero <span class="arrow">&rarr;</span></a>
+          <a class="btn btn-sm" href="https://github.com/ErnestoBayon/pathfinder" rel="noopener">GitHub</a>
+        </div>
+      </div>
+
+      <!-- bottom-right corner: figure micro-specs -->
+      <div class="hero-fig reveal d2" aria-hidden="true">
+        <span class="hf-title">fig.01 &mdash; task tracking</span>
+        <span id="figCoord">x:0000 y:0000</span>
+        <span>v0.1.0 &middot; Los Angeles &middot; 2026</span>
+      </div>
+    </section>
+
+    <!-- ================= 01 · SPEC ================= -->
+    <section class="section-pad-sm" id="spec">
+      <div class="wrap">
+        <div class="label reveal">
+          <span class="dmx" data-dmx="01">01</span>
+          <span>Spec</span>
+          <span class="rule" aria-hidden="true"></span>
+        </div>
+
+        <div class="plate reveal d1" style="margin-top: 0;">
+          <div class="plate-top">
+            <div class="plate-mark">
+              <svg class="dm" viewBox="0 0 11 7" aria-hidden="true"><use href="#dm00"/></svg>
+              <span class="plate-word">dblzero//labs</span>
+            </div>
+            <div class="plate-no" aria-hidden="true">no. 001<br>rev. C</div>
+          </div>
+          <div class="plate-rows">
+            <div class="prow big">to-do app &middot; manager built in</div>
+            <div class="prow">Ernesto Bayon &mdash; Los Angeles, CA</div>
+            <div class="prow">next.js &middot; supabase &middot; claude</div>
+            <div class="prow">operating worldwide *</div>
+          </div>
+        </div>
+        <p class="plate-note reveal d2">* Runs anywhere there's a browser. Today: Vercel and GitHub.</p>
+      </div>
+    </section>
+
+    <!-- ================= 02 · HOW IT WORKS ================= -->
+    <section class="section-pad-sm hairline-top" id="how">
+      <div class="wrap">
+        <div class="label reveal">
+          <span class="dmx" data-dmx="02">02</span>
+          <span>How it works</span>
+          <span class="rule" aria-hidden="true"></span>
+        </div>
+
+        <div class="steps">
+          <div class="step reveal">
+            <span class="dmx" data-dmx="01">01</span>
+            <p>Add your tasks.</p>
+          </div>
+          <div class="step reveal d1">
+            <span class="dmx" data-dmx="02">02</span>
+            <p>The manager sorts them by what matters.</p>
+          </div>
+          <div class="step reveal d2">
+            <span class="dmx" data-dmx="03">03</span>
+            <p>You work. It tells you what's next.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 03 · PHILOSOPHY ================= -->
+    <section class="section-pad hairline-top" id="philosophy">
+      <div class="wrap">
+        <div class="label reveal">
+          <span class="dmx" data-dmx="03">03</span>
+          <span>Philosophy</span>
+          <span class="rule" aria-hidden="true"></span>
+        </div>
+        <h2 class="reveal">Every to-do app makes you do the managing.</h2>
+        <p class="lede reveal d1">Deciding what to do next is work. dblzero decides first &mdash; you confirm or change it.</p>
+
+        <div class="principles">
+          <div class="principle reveal">
+            <span class="num">01</span>
+            <h3>It suggests before you ask</h3>
+            <p>You don't have to prompt it.</p>
+          </div>
+          <div class="principle reveal d1">
+            <span class="num">02</span>
+            <h3>You stay in charge</h3>
+            <p>Accept or change it. One click.</p>
+          </div>
+          <div class="principle reveal d2">
+            <span class="num">03</span>
+            <h3>No manual</h3>
+            <p>Tips appear where you need them.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 04 · PRODUCT ================= -->
+    <section class="section-pad hairline-top" id="product">
+      <div class="wrap">
+        <div class="label reveal">
+          <span class="dmx" data-dmx="04">04</span>
+          <span>Product</span>
+          <span class="rule" aria-hidden="true"></span>
+        </div>
+        <h2 class="reveal">What the manager does.</h2>
+
+        <div class="grid4">
+          <div class="bcard reveal">
+            <span class="idx" aria-hidden="true">A1</span>
+            <h3>Suggests the next task</h3>
+            <p>Reads your whole list. Proposes where to start.</p>
+          </div>
+          <div class="bcard reveal d1">
+            <span class="idx" aria-hidden="true">A2</span>
+            <h3>Keeps one order</h3>
+            <p>One sorted list. The top is the answer.</p>
+          </div>
+          <div class="bcard reveal d1">
+            <span class="idx" aria-hidden="true">B1</span>
+            <h3>No setup, no manual</h3>
+            <p>Short tips appear as you go.</p>
+          </div>
+          <div class="bcard reveal d2">
+            <span class="idx" aria-hidden="true">B2</span>
+            <h3>Built for data science</h3>
+            <p>For work that jumps between analyses, models, and write-ups.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 05 · NETWORK VIEW (in development) ================= -->
+    <section class="section-pad hairline-top" id="network">
+      <div class="wrap">
+        <div class="label reveal">
+          <span class="dmx" data-dmx="05">05</span>
+          <span>Network view</span>
+          <span class="rule" aria-hidden="true"></span>
+        </div>
+
+        <div class="h2row reveal">
+          <h2>See your project as a network.</h2>
+          <span class="chip"><span class="chip-dot" aria-hidden="true"></span>in development</span>
+        </div>
+        <p class="lede reveal d1">Tasks are nodes. Dependencies are edges. The manager highlights the path.</p>
+
+        <div class="netfig reveal d2">
+          <div class="term-mg" aria-hidden="true">
+            <span>fig.02 &mdash; network view</span>
+            <span>concept</span>
+          </div>
+
+          <svg class="net-svg" viewBox="0 0 780 552" xmlns="http://www.w3.org/2000/svg" role="img"
+               aria-label="Concept diagram: tasks drawn as nodes on three stacked isometric planes, dependencies as edges between them, with the next tasks highlighted in yellow">
+
+            <!-- ===== plane L0 ===== -->
+            <g>
+              <path d="M300 44 L444 116 L300 188 L156 116 Z" fill="rgba(232,255,71,0.015)" stroke="rgba(237,237,228,0.2)" stroke-width="1"/>
+              <g stroke="rgba(237,237,228,0.06)" stroke-width="1">
+                <path d="M336 62 L192 134"/><path d="M372 80 L228 152"/><path d="M408 98 L264 170"/>
+                <path d="M264 62 L408 134"/><path d="M228 80 L372 152"/><path d="M192 98 L336 170"/>
+              </g>
+            </g>
+
+            <!-- ===== plane L1 ===== -->
+            <g>
+              <path d="M300 204 L444 276 L300 348 L156 276 Z" fill="rgba(232,255,71,0.015)" stroke="rgba(237,237,228,0.2)" stroke-width="1"/>
+              <g stroke="rgba(237,237,228,0.06)" stroke-width="1">
+                <path d="M336 222 L192 294"/><path d="M372 240 L228 312"/><path d="M408 258 L264 330"/>
+                <path d="M264 222 L408 294"/><path d="M228 240 L372 312"/><path d="M192 258 L336 330"/>
+              </g>
+            </g>
+
+            <!-- ===== plane L2 ===== -->
+            <g>
+              <path d="M300 364 L444 436 L300 508 L156 436 Z" fill="rgba(232,255,71,0.015)" stroke="rgba(237,237,228,0.2)" stroke-width="1"/>
+              <g stroke="rgba(237,237,228,0.06)" stroke-width="1">
+                <path d="M336 382 L192 454"/><path d="M372 400 L228 472"/><path d="M408 418 L264 490"/>
+                <path d="M264 382 L408 454"/><path d="M228 400 L372 472"/><path d="M192 418 L336 490"/>
+              </g>
+            </g>
+
+            <!-- ===== edges: dependencies (within planes) ===== -->
+            <g stroke="rgba(237,237,228,0.28)" stroke-width="1">
+              <line x1="300" y1="80"  x2="372" y2="116"/>
+              <line x1="300" y1="80"  x2="264" y2="134"/>
+              <line x1="372" y1="240" x2="336" y2="294"/>
+              <line x1="336" y1="294" x2="264" y2="330"/>
+              <line x1="300" y1="400" x2="300" y2="436"/>
+              <line x1="300" y1="436" x2="336" y2="490"/>
+              <line x1="228" y1="400" x2="300" y2="400"/>
+            </g>
+
+            <!-- ===== edges: dependencies (across planes, dashed) ===== -->
+            <g stroke="rgba(237,237,228,0.18)" stroke-width="1" stroke-dasharray="2 5">
+              <line x1="372" y1="116" x2="372" y2="240"/>
+              <line x1="372" y1="240" x2="300" y2="400"/>
+              <line x1="264" y1="330" x2="300" y2="436"/>
+            </g>
+
+            <!-- ===== highlighted: what's next ===== -->
+            <polyline points="264,134 264,258 336,294 300,436" fill="none" stroke="#E8FF47" stroke-width="1.5"/>
+
+            <!-- ===== nodes: tasks ===== -->
+            <g fill="#EDEDE4" fill-opacity="0.75">
+              <rect x="296.5" y="76.5"  width="7" height="7"/>
+              <rect x="368.5" y="112.5" width="7" height="7"/>
+              <rect x="368.5" y="236.5" width="7" height="7"/>
+              <rect x="260.5" y="326.5" width="7" height="7"/>
+              <rect x="296.5" y="396.5" width="7" height="7"/>
+              <rect x="332.5" y="486.5" width="7" height="7"/>
+              <rect x="224.5" y="396.5" width="7" height="7"/>
+            </g>
+            <g fill="#060606" stroke="#E8FF47" stroke-width="1.2">
+              <rect x="259.5" y="129.5" width="9" height="9"/>
+              <rect x="259.5" y="253.5" width="9" height="9"/>
+              <rect x="331.5" y="289.5" width="9" height="9"/>
+            </g>
+            <circle class="npulse" cx="300" cy="436" r="14" fill="none" stroke="#E8FF47" stroke-width="1"/>
+            <rect x="295.5" y="431.5" width="9" height="9" fill="#E8FF47"/>
+            <text x="316" y="431" font-family="JetBrains Mono, monospace" font-size="10" fill="#E8FF47" letter-spacing="1">next</text>
+
+            <!-- ===== bracket annotations ===== -->
+            <g stroke="rgba(237,237,228,0.24)" stroke-width="1" fill="none">
+              <path d="M556 54 h6 v124 h-6"/>
+              <path d="M556 214 h6 v124 h-6"/>
+              <path d="M556 374 h6 v124 h-6"/>
+            </g>
+            <g font-family="JetBrains Mono, monospace" font-size="11.5" fill="#A8A89C">
+              <text x="576" y="120">[ nodes: tasks ]</text>
+              <text x="576" y="280">[ edges: dependencies ]</text>
+              <text x="576" y="440" fill="#E8FF47">[ highlighted: what's next ]</text>
+            </g>
+
+            <!-- plane indices -->
+            <g font-family="JetBrains Mono, monospace" font-size="9" fill="#4A4A42" letter-spacing="2">
+              <text x="120" y="120">L0</text>
+              <text x="120" y="280">L1</text>
+              <text x="120" y="440">L2</text>
+            </g>
+          </svg>
+
+          <p class="net-cap">// Illustrative &mdash; feature in development.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 06 · RESEARCH ================= -->
+    <section class="research section-pad hairline-top" id="research">
+      <div class="wrap">
+        <div class="label reveal">
+          <span class="dmx" data-dmx="06">06</span>
+          <span>Research</span>
+          <span class="rule" aria-hidden="true"></span>
+        </div>
+        <h2 class="reveal">We test our own claims.</h2>
+
+        <div class="rlines reveal d1">
+          <span class="ln"><span class="prompt">&gt;</span>Our claim: the manager's task order beats sorting by due date.</span>
+          <span class="ln"><span class="prompt">&gt;</span>We're testing that claim in a registered experiment.</span>
+          <span class="ln"><span class="prompt">&gt;</span>Results get published either way &mdash; good or bad.</span>
+        </div>
+
+        <p class="rnote reveal d2">// method: pre-registered A/B test vs. due-date baseline</p>
+
+        <p class="manifesto reveal d2"><span class="acc">//</span> Less deciding. More doing.</p>
+      </div>
+    </section>
+
+    <!-- ================= FINAL ================= -->
+    <section class="final hairline-top">
+      <div class="wrap">
+        <div class="dm-word reveal" aria-hidden="true">
+          <span class="dmx" data-dmx="NEXT">NEXT</span>
+        </div>
+        <p class="closer reveal d1">Add your tasks. It handles the order.</p>
+        <div class="final-ctas reveal d2">
+          <a class="btn btn-solid" href="https://pathfinder-eight-swart.vercel.app" rel="noopener">Try dblzero <span class="arrow">&rarr;</span></a>
+          <a class="btn" href="https://github.com/ErnestoBayon/pathfinder" rel="noopener">GitHub</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= PATTERN BAND ================= -->
+  <div class="band" aria-hidden="true">
+    <div class="band-track">
+      <div class="band-seq">
+        <span>DBZ&mdash;2026</span><span class="acc">&#9679;</span>
+        <span>dblzero.labs</span><span class="acc">&#10035;</span>
+        <span>with your own M.</span>
+        <svg class="dm" viewBox="0 0 11 7"><use href="#dm00"/></svg>
+        <span>operating worldwide *</span><span class="acc">&#9679;</span>
+      </div>
+      <div class="band-seq">
+        <span>DBZ&mdash;2026</span><span class="acc">&#9679;</span>
+        <span>dblzero.labs</span><span class="acc">&#10035;</span>
+        <span>with your own M.</span>
+        <svg class="dm" viewBox="0 0 11 7"><use href="#dm00"/></svg>
+        <span>operating worldwide *</span><span class="acc">&#9679;</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================= -->
+  <footer>
+    <div class="statusbar">
+      <span class="seg">
+        <span class="badge">dblzero//labs</span>
+        <span>main</span>
+      </span>
+      <span class="seg">
+        <a href="https://github.com/ErnestoBayon/pathfinder" rel="noopener">github</a>
+        <span class="sep">|</span>
+        <a href="https://pathfinder-eight-swart.vercel.app" rel="noopener">app</a>
+      </span>
+      <span class="seg">&copy; 2026 dblzero labs &middot; Los Angeles, CA</span>
+    </div>
+
+    <!-- Easter egg: press the 00 -->
+    <div class="egg" id="egg">
+      <button class="egg-btn" id="eggBtn" type="button" aria-expanded="false" aria-controls="bondLine" aria-label="00">
+        <svg class="dm" viewBox="0 0 11 7" aria-hidden="true"><use href="#dm00"/></svg>
+      </button>
+      <p class="bond" id="bondLine">// yes &mdash; like james bond. double-0 labs.</p>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      // Nav border on scroll
+      var nav = document.getElementById("nav");
+      var onScroll = function () {
+        nav.classList.toggle("scrolled", window.scrollY > 12);
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+
+      // Reveal on scroll
+      var reveals = document.querySelectorAll(".reveal");
+      if ("IntersectionObserver" in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("in");
+              io.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.15, rootMargin: "0px 0px -40px 0px" });
+        reveals.forEach(function (el) { io.observe(el); });
+      } else {
+        reveals.forEach(function (el) { el.classList.add("in"); });
+      }
+
+      // ---- Dot-matrix display type (5x7 grid, same idiom as the 00 mark) ----
+      var DM_FONT = {
+        "0": [".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###."],
+        "1": ["..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###."],
+        "2": [".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####"],
+        "3": [".###.", "#...#", "....#", "..##.", "....#", "#...#", ".###."],
+        "4": ["...#.", "..##.", ".#.#.", "#..#.", "#####", "...#.", "...#."],
+        "5": ["#####", "#....", "####.", "....#", "....#", "#...#", ".###."],
+        "6": [".###.", "#....", "#....", "####.", "#...#", "#...#", ".###."],
+        "7": ["#####", "....#", "...#.", "..#..", ".#...", ".#...", ".#..."],
+        "8": [".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###."],
+        "9": [".###.", "#...#", "#...#", ".####", "....#", "....#", ".###."],
+        "N": ["#...#", "##..#", "##..#", "#.#.#", "#..##", "#..##", "#...#"],
+        "E": ["#####", "#....", "#....", "####.", "#....", "#....", "#####"],
+        "X": ["#...#", "#...#", ".#.#.", "..#..", ".#.#.", "#...#", "#...#"],
+        "T": ["#####", "..#..", "..#..", "..#..", "..#..", "..#..", "..#.."]
+      };
+
+      function dmRender(text) {
+        var cols = text.length * 6 - 1;
+        var s = '<svg viewBox="0 0 ' + cols + ' 7" role="img" aria-label="' + text + '" xmlns="http://www.w3.org/2000/svg"><g fill="currentColor">';
+        for (var i = 0; i < text.length; i++) {
+          var glyph = DM_FONT[text.charAt(i)];
+          if (!glyph) continue;
+          for (var r = 0; r < 7; r++) {
+            for (var c = 0; c < 5; c++) {
+              if (glyph[r].charAt(c) === "#") {
+                s += '<circle cx="' + (i * 6 + c + 0.5) + '" cy="' + (r + 0.5) + '" r="0.34"/>';
+              }
+            }
+          }
+        }
+        return s + "</g></svg>";
+      }
+
+      document.querySelectorAll(".dmx").forEach(function (el) {
+        var text = el.getAttribute("data-dmx") || el.textContent.trim();
+        el.innerHTML = dmRender(text);
+      });
+
+      // ---- Footer easter egg ----
+      var egg = document.getElementById("egg");
+      var eggBtn = document.getElementById("eggBtn");
+      if (egg && eggBtn) {
+        eggBtn.addEventListener("click", function () {
+          var open = egg.classList.toggle("open");
+          eggBtn.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+      }
+
+      // ---- Hero artwork (fig.01): task-ordering thread field ----
+      // Left column: tasks as entered. Right column: the manager's order.
+      // Flowing threads carry each task to its slot; tracking annotations
+      // scan the field and converge on the one marked "next".
+      (function buildHeroArt() {
+        var scatterG = document.getElementById("haScatter");
+        var threadsG = document.getElementById("haThreads");
+        var nodesG = document.getElementById("haNodes");
+        var annoG = document.getElementById("haAnno");
+        var figCoord = document.getElementById("figCoord");
+        if (!scatterG || !threadsG || !nodesG || !annoG) return;
+
+        var NS = "http://www.w3.org/2000/svg";
+        function rnd(a, b) { return a + Math.random() * (b - a); }
+        function mk(tag, attrs, parent) {
+          var el = document.createElementNS(NS, tag);
+          for (var k in attrs) el.setAttribute(k, attrs[k]);
+          if (parent) parent.appendChild(el);
+          return el;
+        }
+        function txt(x, y, str, fill, size, anchor, ls, parent) {
+          var t = mk("text", {
+            x: x, y: y,
+            "font-family": "JetBrains Mono, monospace",
+            "font-size": size,
+            fill: fill,
+            "text-anchor": anchor || "start",
+            "letter-spacing": ls || "1"
+          }, parent);
+          t.textContent = str;
+          return t;
+        }
+        function pad4(n) {
+          n = Math.max(0, Math.round(n));
+          var s = String(n);
+          while (s.length < 4) s = "0" + s;
+          return s;
+        }
+
+        // ---- geometry ----
+        var ROWS = 9, LX = 270, RX = 930, TOP = 150, GAP = 56, CY = 380;
+        // input row i lands in output slot PERM[i] — the manager's re-ordering
+        var PERM = [3, 0, 5, 7, 2, 8, 1, 4, 6];
+        var Lpts = [], Rpts = [], i;
+        for (i = 0; i < ROWS; i++) {
+          Lpts.push([LX, TOP + i * GAP]);
+          Rpts.push([RX, TOP + i * GAP]);
+        }
+        var NEXTP = Rpts[0]; // slot 01 — the marked "next"
+
+        // ---- ambient depth scatter (size + opacity = depth) ----
+        var j, r;
+        for (j = 0; j < 85; j++) {
+          r = rnd(0.5, 1.7);
+          mk("circle", {
+            cx: rnd(150, 1050).toFixed(1),
+            cy: rnd(80, 680).toFixed(1),
+            r: r.toFixed(2),
+            fill: "#EDEDE4",
+            opacity: (0.04 + ((r - 0.5) / 1.2) * 0.14).toFixed(2)
+          }, scatterG);
+        }
+        for (j = 0; j < 6; j++) {
+          mk("circle", {
+            cx: rnd(200, 1000).toFixed(1),
+            cy: rnd(120, 640).toFixed(1),
+            r: rnd(0.8, 1.4).toFixed(2),
+            fill: "#E8FF47",
+            opacity: "0.22"
+          }, scatterG);
+        }
+
+        // ---- threads (flowing beziers pulled through a central waist) ----
+        var paths = [];
+        for (i = 0; i < ROWS; i++) {
+          var ly = Lpts[i][1];
+          var ry = Rpts[PERM[i]][1];
+          var d = "M" + LX + "," + ly +
+                  " C 560," + (ly + (CY - ly) * 0.6).toFixed(1) +
+                  " 640," + (ry + (CY - ry) * 0.6).toFixed(1) +
+                  " " + RX + "," + ry;
+          var isNext = PERM[i] === 0;
+          var isSecond = PERM[i] === 1;
+          var p = mk("path", {
+            d: d,
+            fill: "none",
+            stroke: (isNext || isSecond) ? "#E8FF47" : "#EDEDE4",
+            "stroke-opacity": isNext ? "0.55" : (isSecond ? "0.26" : rnd(0.07, 0.2).toFixed(2)),
+            "stroke-width": isNext ? "1.3" : "1"
+          }, threadsG);
+          paths.push(p);
+          // moving beads on the next-thread + a few quiet ones
+          if (isNext || i % 3 === 0) {
+            var ov = mk("path", {
+              d: d,
+              fill: "none",
+              stroke: isNext ? "#E8FF47" : "#EDEDE4",
+              "stroke-opacity": isNext ? "0.9" : "0.3",
+              "stroke-width": isNext ? "1.5" : "1",
+              "stroke-dasharray": "2 16",
+              "class": "tflow"
+            }, threadsG);
+            ov.setAttribute("style", "animation-duration:" + rnd(6, 10).toFixed(1) + "s; animation-delay:-" + rnd(0, 6).toFixed(1) + "s;");
+          }
+        }
+
+        // ---- columns: nodes + micro labels ----
+        txt(LX, 108, "input // tasks", "#4A4A42", 9, "middle", "2", nodesG);
+        txt(RX, 108, "output // order", "#4A4A42", 9, "middle", "2", nodesG);
+        for (i = 0; i < ROWS; i++) {
+          var yL = Lpts[i][1], yR = Rpts[i][1];
+          mk("rect", { x: LX - 2.5, y: yL - 2.5, width: 5, height: 5, fill: "#EDEDE4", opacity: "0.75" }, nodesG);
+          txt(LX - 16, yL + 3, "T-0" + (i + 1), "#4A4A42", 9, "end", "1", nodesG);
+          if (i !== 0) {
+            mk("rect", { x: RX - 2.5, y: yR - 2.5, width: 5, height: 5, fill: "#EDEDE4", opacity: "0.5" }, nodesG);
+          }
+          txt(RX + 16, yR + 3, "0" + (i + 1), i === 0 ? "#E8FF47" : "#4A4A42", 9, "start", "1", nodesG);
+        }
+
+        // ---- the "next" marker (fixed on order slot 01) ----
+        var nextG = mk("g", { transform: "translate(" + NEXTP[0] + "," + NEXTP[1] + ")" }, annoG);
+        mk("circle", { r: 15, fill: "none", stroke: "#E8FF47", "stroke-width": "1", "class": "npulse" }, nextG);
+        mk("path", { d: "M-24,0 h11 M13,0 h11 M0,-24 v11 M0,13 v11", stroke: "#E8FF47", "stroke-width": "1", fill: "none" }, nextG);
+        mk("rect", { x: -8, y: -8, width: 16, height: 16, fill: "none", stroke: "#E8FF47", "stroke-width": "1.2" }, nextG);
+        txt(0, -30, "next", "#E8FF47", 10, "middle", "1", nextG);
+
+        // ---- anchor points the trackers can lock onto ----
+        var anchors = [];
+        paths.forEach(function (p) {
+          try {
+            var len = p.getTotalLength();
+            [0.35, 0.5, 0.68].forEach(function (f) {
+              var pt = p.getPointAtLength(len * f);
+              anchors.push([pt.x, pt.y]);
+            });
+          } catch (e) { /* getTotalLength unsupported — nodes suffice */ }
+        });
+        anchors = anchors.concat(Lpts, Rpts.slice(1));
+        if (!anchors.length) return;
+
+        // ---- tracking annotations: 3 scan boxes + dashed lines to "next" ----
+        var linkLines = [], trackers = [], labels = [], li, ti;
+        for (li = 0; li < 3; li++) {
+          linkLines.push(mk("line", {
+            x2: NEXTP[0], y2: NEXTP[1],
+            stroke: "#E8FF47", "stroke-opacity": "0.32",
+            "stroke-width": "1", "stroke-dasharray": "3 6"
+          }, annoG));
+        }
+        for (ti = 0; ti < 3; ti++) {
+          var g = mk("g", {}, annoG);
+          mk("rect", { x: -23, y: -17, width: 46, height: 34, fill: "none", stroke: "#EDEDE4", "stroke-opacity": "0.3", "stroke-width": "1" }, g);
+          mk("path", { d: "M-23,-9 v-8 h8 M15,-17 h8 v8 M23,9 v8 h-8 M-15,17 h-8 v-8", fill: "none", stroke: "#EDEDE4", "stroke-opacity": "0.75", "stroke-width": "1" }, g);
+          mk("path", { d: "M-3,0 h6 M0,-3 v6", stroke: "#EDEDE4", "stroke-opacity": "0.6", "stroke-width": "1", fill: "none" }, g);
+          labels.push(txt(-23, 32, "", "#7A7A70", 10, "start", "0.5", g));
+          trackers.push(g);
+        }
+
+        var state = [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }];
+
+        function apply() {
+          for (var i = 0; i < 3; i++) {
+            trackers[i].setAttribute("transform", "translate(" + state[i].x.toFixed(1) + "," + state[i].y.toFixed(1) + ")");
+            linkLines[i].setAttribute("x1", state[i].x.toFixed(1));
+            linkLines[i].setAttribute("y1", state[i].y.toFixed(1));
+          }
+        }
+        function setLabels() {
+          for (var i = 0; i < 3; i++) {
+            labels[i].textContent = "x:" + pad4(state[i].x * 1.8) + " y:" + pad4(state[i].y * 1.8);
+          }
+          if (figCoord) {
+            figCoord.textContent = "x:" + pad4(state[0].x * 1.8) + " y:" + pad4(state[0].y * 1.8);
+          }
+        }
+        function pick() {
+          var res = [];
+          while (res.length < 3) {
+            var p = anchors[(Math.random() * anchors.length) | 0];
+            if (res.indexOf(p) < 0) res.push(p);
+          }
+          return res;
+        }
+        function retarget(instant) {
+          var to = pick();
+          if (instant) {
+            for (var i = 0; i < 3; i++) { state[i].x = to[i][0]; state[i].y = to[i][1]; }
+            apply();
+            setLabels();
+            return;
+          }
+          var from = state.map(function (s) { return { x: s.x, y: s.y }; });
+          var start = performance.now(), dur = 1100;
+          function frame(now) {
+            var t = Math.min(1, (now - start) / dur);
+            var e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+            for (var i = 0; i < 3; i++) {
+              state[i].x = from[i].x + (to[i][0] - from[i].x) * e;
+              state[i].y = from[i].y + (to[i][1] - from[i].y) * e;
+            }
+            apply();
+            if (t < 1) requestAnimationFrame(frame); else setLabels();
+          }
+          requestAnimationFrame(frame);
+        }
+
+        retarget(true);
+        // Re-target the scan boxes every ~5s — gated by prefers-reduced-motion
+        if (!reduceMotion) {
+          setInterval(function () { retarget(false); }, 5000);
+        }
+      })();
+    })();
+  </script>
+</body>
+</html>
