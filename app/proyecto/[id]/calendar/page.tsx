@@ -34,7 +34,7 @@ export default async function ProjectCalendarPage({
   }
 
   return (
-    <div className="mt-8 rounded-2xl border border-line bg-surface p-6 shadow-note">
+    <div className="mt-8 rounded-2xl border border-line bg-panel p-6 shadow-note">
       <Suspense>
         <CalendarView tasksByDate={tasksByDate} fixedProjectId={project.id} />
       </Suspense>

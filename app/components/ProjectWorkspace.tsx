@@ -33,7 +33,7 @@ export default function ProjectWorkspace({
       {/* Columna izquierda — panel de sugerencias (si hay) + tareas */}
       <div>
         <SuggestionsPanel initialSuggested={initialSuggested} onChange={bumpTasks} />
-        <section className="rounded-2xl border border-line bg-surface shadow-note">
+        <section className="rounded-2xl border border-line bg-panel shadow-note">
           <TaskList
             projectId={projectId}
             initialTasks={initialTasks}
@@ -47,7 +47,7 @@ export default function ProjectWorkspace({
       {/* Aquí se pueden agregar: progress bar, métricas, actividad */}
       <div className="flex flex-col gap-4">
         {calendar}
-        <section className="flex h-[420px] flex-col rounded-2xl border border-line bg-surface shadow-note">
+        <section className="flex h-[420px] flex-col rounded-2xl border border-line bg-panel shadow-note">
           <ChatBox
             projectId={projectId}
             initialMessages={initialMessages}

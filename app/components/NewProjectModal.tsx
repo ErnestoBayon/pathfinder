@@ -63,7 +63,7 @@ export default function NewProjectModal({
       <div className="absolute inset-0 bg-ink/30" onClick={onClose} aria-hidden />
 
       {/* Card del modal */}
-      <div className="relative w-full max-w-md rounded-2xl border border-line bg-surface p-6 shadow-note-hover">
+      <div className="relative w-full max-w-md rounded-2xl border border-line bg-panel p-6 shadow-note-hover">
         <h2 id="new-project-title" className="text-lg font-semibold tracking-tight text-ink">
           New project
         </h2>
@@ -80,13 +80,13 @@ export default function NewProjectModal({
               placeholder="My new project"
               autoFocus
               required
-              className="rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-muted focus:border-accent"
+              className="rounded-lg border border-line bg-panel px-3.5 py-2.5 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-dim focus:border-accent"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="np-desc" className="text-sm font-medium text-ink">
-              Description <span className="text-muted">(optional)</span>
+              Description <span className="text-dim">(optional)</span>
             </label>
             <textarea
               id="np-desc"
@@ -94,7 +94,7 @@ export default function NewProjectModal({
               onChange={(e) => setDescripcion(e.target.value)}
               placeholder="What is this project about?"
               rows={3}
-              className="resize-none rounded-lg border border-line bg-surface px-3.5 py-2.5 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-muted focus:border-accent"
+              className="resize-none rounded-lg border border-line bg-panel px-3.5 py-2.5 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-dim focus:border-accent"
             />
           </div>
 
@@ -124,14 +124,14 @@ export default function NewProjectModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-4 py-2.5 text-sm font-medium text-muted transition-colors duration-200 ease-out hover:text-ink"
+              className="rounded-lg px-4 py-2.5 text-sm font-medium text-dim transition-colors duration-200 ease-out hover:text-ink"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!nombre.trim() || saving}
-              className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-accent-hover disabled:opacity-40 disabled:hover:bg-accent"
+              className="bg-cta px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40 disabled:hover:bg-cta"
             >
               {saving ? "Creating…" : "Create"}
             </button>

@@ -4,8 +4,8 @@ import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import type { Prioridad, Task } from "@/lib/types";
 
-// Acento índigo de marca para las cards de sugerencia (ver DESIGN.md).
-const INDIGO = "#5B5BD6";
+// Acento verde de marca para las cards de sugerencia.
+const GREEN = "#1FA855";
 
 // Badge de prioridad: el color ilumina, no rellena (mismo lenguaje que TaskList).
 const PRIORITY_BADGE: Record<Prioridad, { label: string; color: string; bg: string }> = {
@@ -70,9 +70,9 @@ export default function SuggestionsPanel({
   if (suggested.length === 0) return null;
 
   return (
-    <div className="mb-6 rounded-2xl border border-line bg-surface p-5 shadow-note">
+    <div className="mb-6 rounded-2xl border border-line bg-panel p-5 shadow-note">
       <div className="mb-3 flex items-center gap-2">
-        <Sparkles size={16} className="text-indigo-500" aria-hidden />
+        <Sparkles size={16} className="text-accent" aria-hidden />
         <h2 className="text-sm font-semibold text-ink">AI Suggestions</h2>
       </div>
 
@@ -84,7 +84,7 @@ export default function SuggestionsPanel({
             <li
               key={task.id}
               className="flex items-center gap-3 rounded-xl border border-line bg-white p-3 shadow-sm"
-              style={{ borderLeft: `4px solid ${INDIGO}` }}
+              style={{ borderLeft: `4px solid ${GREEN}` }}
             >
               <span className="min-w-0 flex-1 whitespace-normal break-words text-sm text-ink">
                 {task.texto}
@@ -103,7 +103,7 @@ export default function SuggestionsPanel({
                 disabled={busy}
                 aria-label="Approve suggestion"
                 className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-opacity duration-200 ease-out hover:opacity-90 disabled:opacity-40"
-                style={{ backgroundColor: INDIGO }}
+                style={{ backgroundColor: GREEN }}
               >
                 ✓ Approve
               </button>
@@ -113,7 +113,7 @@ export default function SuggestionsPanel({
                 onClick={() => void reject(task)}
                 disabled={busy}
                 aria-label="Reject suggestion"
-                className="shrink-0 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-muted transition-colors duration-200 ease-out hover:text-ink disabled:opacity-40"
+                className="shrink-0 rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-dim transition-colors duration-200 ease-out hover:text-ink disabled:opacity-40"
               >
                 ✗ Reject
               </button>

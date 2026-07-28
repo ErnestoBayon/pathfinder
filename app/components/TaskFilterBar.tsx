@@ -26,7 +26,7 @@ export const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 // dependemos del color solo para el estado.
 const CHIP_BASE =
   "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-200 ease-out";
-const CHIP_INACTIVE = "border-line bg-surface text-muted hover:text-ink";
+const CHIP_INACTIVE = "border-line bg-panel text-dim hover:text-ink";
 
 // Barra de filtro/orden 100% cliente. Presentacional: no conoce la URL; recibe
 // el estado ya derivado y notifica cambios hacia arriba (el caller escribe la URL).
@@ -98,7 +98,7 @@ export default function TaskFilterBar({
       {/* Orden: empujado a la derecha. Solo en la lista (la vista Board lo omite). */}
       {onSortChange && (
         <div className="ml-auto flex items-center gap-1.5">
-          <label htmlFor="task-sort" className="text-xs text-muted">
+          <label htmlFor="task-sort" className="text-xs text-dim">
             Sort
           </label>
           <select
@@ -106,7 +106,7 @@ export default function TaskFilterBar({
             value={sort}
             onChange={(e) => onSortChange(e.target.value as SortKey)}
             aria-label="Sort tasks"
-            className="cursor-pointer rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink outline-none transition-colors duration-200 ease-out hover:border-accent focus:border-accent"
+            className="cursor-pointer rounded-full border border-line bg-panel px-3 py-1 text-xs font-medium text-ink outline-none transition-colors duration-200 ease-out hover:border-accent focus:border-accent"
           >
             {SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -123,7 +123,7 @@ export default function TaskFilterBar({
           type="button"
           onClick={onClear}
           className={[
-            "text-xs font-medium text-muted underline-offset-2 transition-colors duration-200 ease-out hover:text-accent hover:underline",
+            "text-xs font-medium text-dim underline-offset-2 transition-colors duration-200 ease-out hover:text-accent hover:underline",
             onSortChange ? "" : "ml-auto",
           ].join(" ")}
         >

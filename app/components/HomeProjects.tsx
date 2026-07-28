@@ -54,8 +54,8 @@ export default function HomeProjects({
       {projects.length === 0 ? (
         <div className="mx-auto mt-12 max-w-lg">
           <div className="text-center">
-            <h2 className="text-2xl font-bold tracking-tight text-ink">Welcome to Pathfinder</h2>
-            <p className="mt-2 text-sm text-muted">
+            <h2 className="text-2xl font-bold tracking-tight text-ink">Welcome to dblzero</h2>
+            <p className="mt-2 text-sm text-dim">
               Your AI project manager for planning, prioritizing, and shipping.
             </p>
           </div>
@@ -68,7 +68,7 @@ export default function HomeProjects({
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="w-full max-w-xs rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-accent-hover"
+              className="w-full max-w-xs bg-cta px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-cta-hover"
             >
               Create your first project
             </button>
@@ -76,7 +76,7 @@ export default function HomeProjects({
               type="button"
               onClick={handleSeedDemo}
               disabled={seeding}
-              className="w-full max-w-xs rounded-lg border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink transition-colors duration-200 ease-out hover:border-accent hover:text-accent disabled:opacity-50"
+              className="w-full max-w-xs rounded-lg border border-line bg-panel px-5 py-2.5 text-sm font-medium text-ink transition-colors duration-200 ease-out hover:border-accent hover:text-accent disabled:opacity-50"
             >
               {seeding ? "Loading example…" : "Explore an example project"}
             </button>

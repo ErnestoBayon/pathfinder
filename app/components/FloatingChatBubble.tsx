@@ -43,9 +43,9 @@ export default function FloatingChatBubble({
         className={[
           "fixed bottom-10 right-6 z-[60]",
           "flex h-14 w-14 items-center justify-center rounded-full",
-          "bg-indigo-600 shadow-lg transition-colors duration-200 ease-out",
-          "hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2",
-          "focus-visible:ring-indigo-400 focus-visible:ring-offset-2",
+          "bg-cta shadow-lg transition-colors duration-200 ease-out",
+          "hover:bg-cta-hover focus-visible:outline-none focus-visible:ring-2",
+          "focus-visible:ring-accent focus-visible:ring-offset-2",
           open ? "hidden" : "",
         ].join(" ")}
       >
@@ -58,8 +58,8 @@ export default function FloatingChatBubble({
         className={[
           "fixed bottom-10 right-6 z-[60]",
           "h-[520px] max-h-[calc(100vh-5rem)] w-96 overflow-hidden rounded-2xl",
-          "border border-line bg-surface",
-          "shadow-[0_16px_48px_rgba(0,0,0,0.45)] ring-1 ring-white/10",
+          "border border-line bg-panel",
+          "shadow-note-hover",
           !open ? "hidden" : "",
         ].join(" ")}
       >
@@ -67,7 +67,7 @@ export default function FloatingChatBubble({
         <button
           onClick={() => setOpen(false)}
           aria-label="Minimize chat"
-          className="absolute right-4 top-5 z-10 rounded-full p-1.5 text-muted transition-colors duration-200 ease-out hover:bg-canvas hover:text-ink"
+          className="absolute right-4 top-5 z-10 rounded-full p-1.5 text-dim transition-colors duration-200 ease-out hover:bg-base hover:text-ink"
         >
           <ChevronDown size={15} aria-hidden />
         </button>

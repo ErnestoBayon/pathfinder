@@ -46,22 +46,24 @@ export default function AuthForm({ mode }: { mode: Mode }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-line bg-surface p-7 shadow-note">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Pathfinder</p>
+      <div className="w-full max-w-sm rounded-2xl border border-line bg-panel p-7 shadow-note">
+        <p className="font-mono text-xs font-semibold text-ink">
+          dblzero<span className="text-accent">//</span><span className="text-dim">labs</span>
+        </p>
         <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink">{copy.title}</h1>
 
         <button
           type="button"
           onClick={() => void continueWithGoogle()}
           disabled={loading}
-          className="mt-6 w-full rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-accent-hover disabled:opacity-40 disabled:hover:bg-accent"
+          className="mt-6 w-full bg-cta px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40 disabled:hover:bg-cta"
         >
           {loading ? "Connecting…" : "Continue with Google"}
         </button>
 
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
-        <p className="mt-5 text-center text-sm text-muted">
+        <p className="mt-5 text-center text-sm text-dim">
           {copy.altText}{" "}
           <Link
             href={copy.altHref}

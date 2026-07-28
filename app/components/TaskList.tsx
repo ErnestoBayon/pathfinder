@@ -391,14 +391,14 @@ export default function TaskList({
             style={drag?.style}
             className={drag?.isDragging ? "relative z-10 opacity-70" : ""}
           >
-            <div className="group flex h-auto items-start gap-1.5 rounded-lg px-1 py-2 transition-colors duration-200 ease-out hover:bg-canvas">
+            <div className="group flex h-auto items-start gap-1.5 rounded-lg px-1 py-2 transition-colors duration-200 ease-out hover:bg-base">
               {drag ? (
                 <span
                   ref={drag.setActivatorNodeRef}
                   {...drag.attributes}
                   {...drag.listeners}
                   aria-label="Reorder task"
-                  className="shrink-0 cursor-grab touch-none select-none px-0.5 text-sm leading-none text-muted opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 active:cursor-grabbing"
+                  className="shrink-0 cursor-grab touch-none select-none px-0.5 text-sm leading-none text-dim opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100 active:cursor-grabbing"
                 >
                   ⠿
                 </span>
@@ -443,14 +443,14 @@ export default function TaskList({
                     }
                     commitEdit(task);
                   }}
-                  className="min-w-0 flex-1 rounded-md border border-accent bg-surface px-2 py-0.5 text-sm leading-relaxed text-ink outline-none"
+                  className="min-w-0 flex-1 rounded-md border border-accent bg-panel px-2 py-0.5 text-sm leading-relaxed text-ink outline-none"
                 />
               ) : (
                 <span
                   onClick={() => startEdit(task)}
                   className={[
                     "min-w-0 flex-1 cursor-text whitespace-normal break-words text-sm leading-snug",
-                    done ? "text-muted line-through" : "text-ink",
+                    done ? "text-dim line-through" : "text-ink",
                   ].join(" ")}
                 >
                   {task.texto}
@@ -484,11 +484,11 @@ export default function TaskList({
                   className="absolute inset-0 z-10 w-full cursor-pointer opacity-0"
                 />
                 {task.deadline ? (
-                  <span className="pointer-events-none whitespace-nowrap text-xs text-muted">
+                  <span className="pointer-events-none whitespace-nowrap text-xs text-dim">
                     {formatDeadline(task.deadline)}
                   </span>
                 ) : (
-                  <span className="pointer-events-none text-muted opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
+                  <span className="pointer-events-none text-dim opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
                     <CalendarIcon />
                   </span>
                 )}
@@ -503,7 +503,7 @@ export default function TaskList({
                 style={{ color: st.dot, backgroundColor: st.tint }}
               >
                 {PRIORIDAD_ORDEN.map((p) => (
-                  <option key={p} value={p} className="bg-surface text-ink">
+                  <option key={p} value={p} className="bg-panel text-ink">
                     {p}
                   </option>
                 ))}
@@ -513,7 +513,7 @@ export default function TaskList({
                 type="button"
                 onClick={() => void remove(task)}
                 aria-label="Delete task"
-                className="shrink-0 rounded-md px-1 text-base leading-none text-muted opacity-0 transition-opacity duration-200 ease-out hover:text-ink group-hover:opacity-100"
+                className="shrink-0 rounded-md px-1 text-base leading-none text-dim opacity-0 transition-opacity duration-200 ease-out hover:text-ink group-hover:opacity-100"
               >
                 ×
               </button>
@@ -533,7 +533,7 @@ export default function TaskList({
                       type="button"
                       onClick={() => toggleSubtasks(task.id)}
                       aria-expanded={expanded}
-                      className="inline-flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted transition-colors duration-200 ease-out hover:text-ink"
+                      className="inline-flex items-center gap-1 rounded px-1 py-0.5 text-xs text-dim transition-colors duration-200 ease-out hover:text-ink"
                     >
                       <span aria-hidden>{expanded ? "▾" : "▸"}</span>
                       Add subtasks
@@ -588,7 +588,7 @@ export default function TaskList({
     <div className="flex flex-col p-6">
       <div className={totalTasks > 0 ? "flex items-baseline justify-between" : "mb-4 flex items-baseline justify-between"}>
         <h2 className="text-sm font-semibold text-ink">Tasks</h2>
-        <span className="text-xs text-muted">
+        <span className="text-xs text-dim">
           {pendientes} {pendientes === 1 ? "pending" : "pending"}
         </span>
       </div>
@@ -596,14 +596,14 @@ export default function TaskList({
       {/* Barra de progreso del proyecto: tareas completadas / total. */}
       {totalTasks > 0 && (
         <div className="mb-2 flex items-center gap-2 py-2">
-          <span className="shrink-0 text-xs tabular-nums text-muted">
+          <span className="shrink-0 text-xs tabular-nums text-dim">
             {doneTasks} / {totalTasks} tasks
           </span>
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100">
             <div
               className={[
                 "h-full rounded-full transition-all duration-200 ease-out",
-                allTasksDone ? "bg-green-500" : "bg-indigo-500",
+                allTasksDone ? "bg-green-500" : "bg-cta",
               ].join(" ")}
               style={{ width: `${taskPct}%` }}
             />
@@ -612,7 +612,7 @@ export default function TaskList({
       )}
 
       {totalTasks === 0 ? (
-        <p className="mb-4 text-sm text-muted">
+        <p className="mb-4 text-sm text-dim">
           No tasks yet. Add the first one below.
         </p>
       ) : (
@@ -632,15 +632,15 @@ export default function TaskList({
               defecto. Solo con filas visibles (el estado vacío ya trae su propio clear).
               Desaparece por completo en la vista default (dndEnabled). */}
           {!dndEnabled && ordered.length > 0 && (
-            <p className="-mt-2 mb-3 text-xs text-muted">
+            <p className="-mt-2 mb-3 text-xs text-dim">
               Reordering is paused while filters or sorting are active.
             </p>
           )}
 
           {ordered.length === 0 ? (
             // Filtros que no matchean ninguna tarea (nunca cuando totalTasks === 0).
-            <div className="mb-4 rounded-lg border border-line bg-canvas px-4 py-6 text-center">
-              <p className="text-sm text-muted">No tasks match these filters.</p>
+            <div className="mb-4 rounded-lg border border-line bg-base px-4 py-6 text-center">
+              <p className="text-sm text-dim">No tasks match these filters.</p>
               <button
                 type="button"
                 onClick={clearFilters}
@@ -684,12 +684,12 @@ export default function TaskList({
           onChange={(e) => setTexto(e.target.value)}
           placeholder="Add a task…"
           disabled={adding}
-          className="flex-1 rounded-full border border-line bg-surface px-5 py-3 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-muted focus:border-accent"
+          className="flex-1 rounded-full border border-line bg-panel px-5 py-3 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-dim focus:border-accent"
         />
         <button
           type="submit"
           disabled={adding || texto.trim() === ""}
-          className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-accent-hover disabled:opacity-40 disabled:hover:bg-accent"
+          className="rounded-full bg-cta px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40 disabled:hover:bg-cta"
         >
           {adding ? "…" : "Add"}
         </button>

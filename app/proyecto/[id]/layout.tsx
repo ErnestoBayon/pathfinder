@@ -28,11 +28,11 @@ export default async function ProjectLayout({
     <>
     <div className="min-h-screen">
       {/* Navbar simple */}
-      <nav className="border-b border-line bg-surface">
+      <nav className="border-b border-line bg-panel">
         <div className="mx-auto flex max-w-6xl items-center px-6 py-4">
           <Link
             href="/home"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors duration-200 ease-out hover:text-ink"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-dim transition-colors duration-200 ease-out hover:text-ink"
           >
             <span aria-hidden>←</span> Projects
           </Link>

@@ -22,7 +22,7 @@ export default function LogoutButton() {
       type="button"
       onClick={() => void logout()}
       disabled={loading}
-      className="shrink-0 text-base font-medium text-muted transition-colors duration-200 ease-out hover:text-ink disabled:opacity-40"
+      className="shrink-0 text-base font-medium text-dim transition-colors duration-200 ease-out hover:text-ink disabled:opacity-40"
     >
       {loading ? "Signing out…" : "Sign out"}
     </button>

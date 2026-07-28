@@ -36,7 +36,7 @@ export default function ProjectTabs({ projectId }: { projectId: string }) {
             "relative -mb-px border-b-2 px-4 py-2.5 text-sm font-medium transition-colors duration-200 ease-out",
             t.active
               ? "border-accent text-accent"
-              : "border-transparent text-muted hover:text-ink",
+              : "border-transparent text-dim hover:text-ink",
           ].join(" ")}
         >
           {t.label}

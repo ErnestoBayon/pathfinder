@@ -130,7 +130,7 @@ export default function TaskDetailModal({
         role="dialog"
         aria-modal="true"
         aria-label="Task details"
-        className="relative z-10 my-auto w-full max-w-lg rounded-2xl border border-line bg-surface p-6 shadow-note-hover"
+        className="relative z-10 my-auto w-full max-w-lg rounded-2xl border border-line bg-panel p-6 shadow-note-hover"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Título + cierre */}
@@ -146,15 +146,15 @@ export default function TaskDetailModal({
             }}
             placeholder="Task title"
             className={[
-              "min-w-0 flex-1 rounded-lg border border-line bg-canvas px-3 py-2 text-base font-medium outline-none transition-colors duration-200 ease-out focus:border-accent",
-              estado === "done" ? "text-muted line-through" : "text-ink",
+              "min-w-0 flex-1 rounded-lg border border-line bg-base px-3 py-2 text-base font-medium outline-none transition-colors duration-200 ease-out focus:border-accent",
+              estado === "done" ? "text-dim line-through" : "text-ink",
             ].join(" ")}
           />
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="mt-1 shrink-0 rounded-lg p-1 text-xl leading-none text-muted transition-colors duration-200 ease-out hover:text-ink"
+            className="mt-1 shrink-0 rounded-lg p-1 text-xl leading-none text-dim transition-colors duration-200 ease-out hover:text-ink"
           >
             ×
           </button>
@@ -180,7 +180,7 @@ export default function TaskDetailModal({
             value={estado}
             onChange={(e) => setEstado(e.target.value as TaskState)}
             aria-label="Status"
-            className="cursor-pointer appearance-none rounded-full border border-line bg-canvas px-3 py-1 text-xs font-medium text-ink outline-none transition-colors duration-200 ease-out hover:border-accent"
+            className="cursor-pointer appearance-none rounded-full border border-line bg-base px-3 py-1 text-xs font-medium text-ink outline-none transition-colors duration-200 ease-out hover:border-accent"
           >
             {ESTADO_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -194,7 +194,7 @@ export default function TaskDetailModal({
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
             aria-label="Deadline"
-            className="cursor-pointer rounded-full border border-line bg-canvas px-3 py-1 text-xs text-ink outline-none transition-colors duration-200 ease-out hover:border-accent"
+            className="cursor-pointer rounded-full border border-line bg-base px-3 py-1 text-xs text-ink outline-none transition-colors duration-200 ease-out hover:border-accent"
           />
 
           <button
@@ -203,7 +203,7 @@ export default function TaskDetailModal({
             aria-pressed={esClave}
             className={[
               "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-200 ease-out",
-              esClave ? "" : "border-line bg-surface text-muted hover:text-ink",
+              esClave ? "" : "border-line bg-panel text-dim hover:text-ink",
             ].join(" ")}
             style={
               esClave
@@ -220,7 +220,7 @@ export default function TaskDetailModal({
 
         {/* Subtareas — mismo componente que la lista */}
         <div className="mb-5">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-dim">
             Subtasks
           </h3>
           <SubtaskList
@@ -249,7 +249,7 @@ export default function TaskDetailModal({
               <button
                 type="button"
                 onClick={() => setConfirmDelete(false)}
-                className="rounded-full border border-line px-3 py-1 text-xs font-medium text-muted transition-colors duration-200 ease-out hover:text-ink"
+                className="rounded-full border border-line px-3 py-1 text-xs font-medium text-dim transition-colors duration-200 ease-out hover:text-ink"
               >
                 Cancel
               </button>
@@ -258,7 +258,7 @@ export default function TaskDetailModal({
             <button
               type="button"
               onClick={() => setConfirmDelete(true)}
-              className="rounded-full border border-line px-3 py-1 text-xs font-medium text-muted transition-colors duration-200 ease-out hover:border-red-300 hover:text-red-600"
+              className="rounded-full border border-line px-3 py-1 text-xs font-medium text-dim transition-colors duration-200 ease-out hover:border-red-300 hover:text-red-600"
             >
               Delete
             </button>
@@ -268,7 +268,7 @@ export default function TaskDetailModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-muted transition-colors duration-200 ease-out hover:text-ink"
+              className="rounded-full border border-line px-4 py-1.5 text-sm font-medium text-dim transition-colors duration-200 ease-out hover:text-ink"
             >
               {isDirty ? "Discard" : "Close"}
             </button>
@@ -277,7 +277,7 @@ export default function TaskDetailModal({
                 type="button"
                 onClick={() => void save()}
                 disabled={saving || !texto.trim()}
-                className="rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-white transition-colors duration-200 ease-out hover:bg-accent-hover disabled:opacity-40"
+                className="rounded-full bg-cta px-4 py-1.5 text-sm font-medium text-white transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40"
               >
                 {saving ? "Saving…" : "Save"}
               </button>

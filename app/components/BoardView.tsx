@@ -178,7 +178,7 @@ export default function BoardView({
 
   if (tasks.length === 0) {
     return (
-      <p className="mt-10 text-sm text-muted">No tasks yet. Add them from the Overview tab.</p>
+      <p className="mt-10 text-sm text-dim">No tasks yet. Add them from the Overview tab.</p>
     );
   }
 
@@ -194,8 +194,8 @@ export default function BoardView({
       />
 
       {filtered.length === 0 ? (
-        <div className="rounded-lg border border-line bg-canvas px-4 py-6 text-center">
-          <p className="text-sm text-muted">No tasks match these filters.</p>
+        <div className="rounded-lg border border-line bg-base px-4 py-6 text-center">
+          <p className="text-sm text-dim">No tasks match these filters.</p>
           <button
             type="button"
             onClick={clearFilters}

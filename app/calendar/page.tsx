@@ -49,7 +49,9 @@ export default async function CalendarPage() {
     <main className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
       <header className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Pathfinder</p>
+          <p className="font-mono text-xs font-semibold text-ink">
+            dblzero<span className="text-accent">//</span><span className="text-dim">labs</span>
+          </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">Calendar</h1>
         </div>
         <div className="flex items-center gap-4">
@@ -58,7 +60,7 @@ export default async function CalendarPage() {
         </div>
       </header>
 
-      <div className="mt-10 rounded-2xl border border-line bg-surface p-6 shadow-note">
+      <div className="mt-10 rounded-2xl border border-line bg-panel p-6 shadow-note">
         <Suspense>
           <CalendarView tasksByDate={tasksByDate} />
         </Suspense>

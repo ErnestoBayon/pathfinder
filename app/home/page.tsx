@@ -4,19 +4,19 @@ import TopNav from "../components/TopNav";
 import GuideButton from "../components/GuideButton";
 import { getProjectTaskCounts, listProjects } from "@/lib/store";
 
-// Lee el estado fresco de Supabase en cada request.
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const projects = await listProjects();
-  // Conteos de tareas (done/total) por proyecto en una sola query, para el progress bar.
   const taskCounts = await getProjectTaskCounts(projects.map((p) => p.id)).catch(() => ({}));
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
       <header className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">Pathfinder</p>
+          <p className="font-mono text-xs font-semibold text-ink">
+            dblzero<span className="text-accent">//</span><span className="text-dim">labs</span>
+          </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
             Your projects
           </h1>

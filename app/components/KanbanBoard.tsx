@@ -97,7 +97,7 @@ function Card({
       ref={setNodeRef}
       style={style}
       className={[
-        "group/card select-none rounded-xl border border-line bg-surface shadow-note transition-shadow duration-200 ease-out",
+        "group/card select-none rounded-xl border border-line bg-panel shadow-note transition-shadow duration-200 ease-out",
         isDragging ? "relative z-10 opacity-80 shadow-note-hover" : "hover:shadow-note-hover",
       ].join(" ")}
     >
@@ -116,7 +116,7 @@ function Card({
           <p
             className={[
               "min-w-0 flex-1 whitespace-normal break-words text-sm leading-snug",
-              done ? "text-muted line-through" : "text-ink",
+              done ? "text-dim line-through" : "text-ink",
             ].join(" ")}
           >
             {task.texto}
@@ -138,7 +138,7 @@ function Card({
             {...listeners}
             onClick={(e) => e.stopPropagation()}
             aria-label="Drag to move"
-            className="shrink-0 cursor-grab touch-none select-none text-sm leading-none text-muted/40 transition-opacity duration-200 ease-out group-hover/card:text-muted/70 active:cursor-grabbing"
+            className="shrink-0 cursor-grab touch-none select-none text-sm leading-none text-dim/40 transition-opacity duration-200 ease-out group-hover/card:text-dim/70 active:cursor-grabbing"
           >
             ⠿
           </span>
@@ -155,7 +155,7 @@ function Card({
           </span>
 
           {task.deadline && (
-            <span className="inline-flex items-center gap-1 text-xs text-muted">
+            <span className="inline-flex items-center gap-1 text-xs text-dim">
               <CalendarIcon />
               {formatDeadline(task.deadline)}
             </span>
@@ -254,13 +254,13 @@ function Column({
     <div className="flex min-w-0 flex-col">
       {/* Cabecera: título + contador + "Clear completed" (solo Done) */}
       <div className="mb-2 flex items-center gap-2 px-1">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{title}</h3>
-        <span className="tabular-nums text-xs text-muted">{tasks.length}</span>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-dim">{title}</h3>
+        <span className="tabular-nums text-xs text-dim">{tasks.length}</span>
         {hasDone && (
           <div className="ml-auto flex items-center gap-1">
             {confirmClear ? (
               <>
-                <span className="text-xs text-muted">Clear {tasks.length}?</span>
+                <span className="text-xs text-dim">Clear {tasks.length}?</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -274,7 +274,7 @@ function Column({
                 <button
                   type="button"
                   onClick={() => setConfirmClear(false)}
-                  className="rounded px-1.5 py-0.5 text-xs text-muted transition-colors duration-200 ease-out hover:text-ink"
+                  className="rounded px-1.5 py-0.5 text-xs text-dim transition-colors duration-200 ease-out hover:text-ink"
                 >
                   No
                 </button>
@@ -283,7 +283,7 @@ function Column({
               <button
                 type="button"
                 onClick={() => setConfirmClear(true)}
-                className="rounded px-1.5 py-0.5 text-xs text-muted transition-colors duration-200 ease-out hover:text-red-600"
+                className="rounded px-1.5 py-0.5 text-xs text-dim transition-colors duration-200 ease-out hover:text-red-600"
               >
                 Clear
               </button>
@@ -297,11 +297,11 @@ function Column({
         ref={setNodeRef}
         className={[
           "flex min-h-[24rem] flex-1 flex-col gap-2 rounded-xl border p-2.5 transition-colors duration-200 ease-out",
-          isOver ? "border-accent/40 bg-accent/5" : "border-line bg-canvas",
+          isOver ? "border-accent/40 bg-accent/5" : "border-line bg-base",
         ].join(" ")}
       >
         {tasks.length === 0 && !isAdding && (
-          <p className="px-2 py-4 text-center text-xs text-muted/70">Drop tasks here</p>
+          <p className="px-2 py-4 text-center text-xs text-dim/70">Drop tasks here</p>
         )}
 
         {children}
@@ -320,20 +320,20 @@ function Column({
                 }
               }}
               placeholder="Task title…"
-              className="w-full rounded-lg border border-accent bg-surface px-3 py-2 text-sm text-ink outline-none placeholder:text-muted"
+              className="w-full rounded-lg border border-accent bg-panel px-3 py-2 text-sm text-ink outline-none placeholder:text-dim"
             />
             <div className="flex gap-2">
               <button
                 type="submit"
                 disabled={!addText.trim()}
-                className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-white transition-colors duration-200 ease-out hover:bg-accent-hover disabled:opacity-40"
+                className="rounded-full bg-cta px-3 py-1 text-xs font-semibold text-white transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40"
               >
                 Add
               </button>
               <button
                 type="button"
                 onClick={onAddCancel}
-                className="rounded-full border border-line px-3 py-1 text-xs font-medium text-muted transition-colors duration-200 ease-out hover:text-ink"
+                className="rounded-full border border-line px-3 py-1 text-xs font-medium text-dim transition-colors duration-200 ease-out hover:text-ink"
               >
                 Cancel
               </button>
@@ -343,7 +343,7 @@ function Column({
           <button
             type="button"
             onClick={onAddRequest}
-            className="mt-1 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted/70 transition-colors duration-200 ease-out hover:bg-line/40 hover:text-muted"
+            className="mt-1 flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-dim/70 transition-colors duration-200 ease-out hover:bg-line/40 hover:text-dim"
           >
             <span aria-hidden className="text-base leading-none">+</span>
             Add task
