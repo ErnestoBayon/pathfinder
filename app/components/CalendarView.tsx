@@ -31,7 +31,7 @@ const PRIORITY_FILTERS: { key: PriorityFilter; label: string; active: string; in
   {
     key: "all",
     label: "All",
-    active: "bg-ink text-panel",
+    active: "border border-accent bg-accent-fill text-ink",
     inactive: "border border-line text-dim hover:bg-raise",
   },
   {
@@ -309,7 +309,7 @@ export default function CalendarView({
             aria-pressed={showCompleted}
             className={[
               "rounded-full px-3 py-1 text-xs font-medium transition-colors duration-200 ease-out",
-              showCompleted ? "bg-ink text-panel" : "border border-line text-dim hover:bg-raise",
+              showCompleted ? "border border-accent bg-accent-fill text-ink" : "border border-line bg-panel text-dim hover:bg-raise",
             ].join(" ")}
           >
             {showCompleted ? "Hide completed" : "Show completed"}
@@ -326,7 +326,7 @@ export default function CalendarView({
                 onClick={() => toggleCalView(v)}
                 className={[
                   "px-3 py-1 capitalize transition-colors duration-200 ease-out",
-                  calView === v ? "bg-ink text-panel" : "text-dim hover:bg-raise",
+                  calView === v ? "bg-accent-fill text-ink font-semibold" : "text-dim hover:bg-raise",
                 ].join(" ")}
               >
                 {v === "month" ? "Month" : "Week"}
