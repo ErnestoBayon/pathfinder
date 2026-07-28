@@ -7,6 +7,12 @@ import AgentAvatar from "./AgentAvatar";
 interface ChatMessage {
   role: "user" | "pm";
   text: string;
+  ts: string;
+}
+
+function nowHHMM(): string {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 export default function ChatBox({
@@ -25,6 +31,7 @@ export default function ChatBox({
     initialMessages.map((m) => ({
       role: m.role === "assistant" ? "pm" : "user",
       text: m.content,
+      ts: "",
     })),
   );
   const [input, setInput] = useState("");
@@ -50,15 +57,15 @@ export default function ChatBox({
         if (data.noOp) return;
         if (data.reply) {
           if (data.toolsUsed) onTasksCreated?.();
-          setMessages((m) => [...m, { role: "pm" as const, text: data.reply! }]);
+          setMessages((m) => [...m, { role: "pm" as const, text: data.reply!, ts: nowHHMM() }]);
         } else {
           greetedRef.current = false;
-          setMessages((m) => [...m, { role: "pm" as const, text: FALLBACK }]);
+          setMessages((m) => [...m, { role: "pm" as const, text: FALLBACK, ts: nowHHMM() }]);
         }
       })
       .catch(() => {
         greetedRef.current = false;
-        setMessages((m) => [...m, { role: "pm" as const, text: FALLBACK }]);
+        setMessages((m) => [...m, { role: "pm" as const, text: FALLBACK, ts: nowHHMM() }]);
       })
       .finally(() => {
         setSending(false);
@@ -80,7 +87,7 @@ export default function ChatBox({
 
     setInput("");
     setSending(true);
-    setMessages((m) => [...m, { role: "user", text }]);
+    setMessages((m) => [...m, { role: "user", text, ts: nowHHMM() }]);
     scrollToBottom();
 
     try {
@@ -97,10 +104,10 @@ body: JSON.stringify({ message: text, projectId }),
       if (data.toolsUsed) onTasksCreated?.();
       setMessages((m) => [
         ...m,
-        { role: "pm", text: data.reply ?? data.error ?? "Something went wrong. Please try again." },
+        { role: "pm", text: data.reply ?? data.error ?? "Something went wrong. Please try again.", ts: nowHHMM() },
       ]);
     } catch {
-      setMessages((m) => [...m, { role: "pm", text: "Couldn't connect. Check your connection." }]);
+      setMessages((m) => [...m, { role: "pm", text: "Couldn't connect. Check your connection.", ts: nowHHMM() }]);
     } finally {
       setSending(false);
       scrollToBottom();
@@ -116,10 +123,10 @@ body: JSON.stringify({ message: text, projectId }),
 
   return (
     <div className="flex h-full flex-col p-6">
-      {/* Header — "Your PM" in accent green per spec */}
+      {/* Header */}
       <div className="mb-4 flex items-center gap-3">
         <AgentAvatar color="#1FA855" state={sending ? "thinking" : "active"} size={40} />
-        <h2 className="text-sm font-semibold text-accent">Your PM</h2>
+        <h2 className="font-mono text-sm font-semibold text-accent">M — your project manager</h2>
       </div>
 
       {/* Onboarding hint — green tint, light-mode */}
@@ -161,7 +168,18 @@ body: JSON.stringify({ message: text, projectId }),
           </p>
         ) : (
           messages.map((m, i) => (
-            <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+            <div
+              key={i}
+              className={m.role === "user" ? "flex flex-col items-end gap-0.5" : "flex flex-col items-start gap-0.5"}
+            >
+              <span
+                className={[
+                  "font-mono text-[10px] font-semibold",
+                  m.role === "user" ? "text-dim" : "text-accent",
+                ].join(" ")}
+              >
+                {m.role === "user" ? "you" : "m"}
+              </span>
               <span
                 className={[
                   "max-w-[92%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
@@ -172,6 +190,9 @@ body: JSON.stringify({ message: text, projectId }),
               >
                 {m.text}
               </span>
+              {m.ts && (
+                <span className="font-mono text-[9px] text-faint">{m.ts}</span>
+              )}
             </div>
           ))
         )}
@@ -189,7 +210,7 @@ body: JSON.stringify({ message: text, projectId }),
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Message your PM…"
+          placeholder="> message M…"
           disabled={sending}
           className="flex-1 rounded-full border border-line bg-panel px-5 py-3 text-sm text-ink outline-none transition-colors duration-200 ease-out placeholder:text-dim focus:border-accent"
         />
