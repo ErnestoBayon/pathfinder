@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://dblzero.com/sitemap.xml
+Sitemap: https://dblzerolabs.com/sitemap.xml
