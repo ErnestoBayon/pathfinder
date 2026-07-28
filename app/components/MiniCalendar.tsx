@@ -41,16 +41,16 @@ export default function MiniCalendar({
       href="/calendar"
       aria-label="View in calendar"
       data-project={projectId}
-      className="block w-full flex-shrink-0 cursor-pointer rounded-2xl bg-white p-3 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md"
+      className="block w-full flex-shrink-0 cursor-pointer rounded-2xl bg-panel p-3 shadow-note ring-1 ring-line transition hover:shadow-note-hover"
     >
-      <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-red-500">
+      <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-accent">
         {monthLabel}
       </div>
 
       {/* Días de la semana */}
       <div className="grid grid-cols-7">
         {DIAS.map((d, i) => (
-          <div key={i} className="pb-1 text-center text-[10px] font-medium text-gray-400">
+          <div key={i} className="pb-1 text-center text-[10px] font-medium text-faint">
             {d}
           </div>
         ))}
@@ -67,10 +67,10 @@ export default function MiniCalendar({
                 className={[
                   "flex h-5 w-5 items-center justify-center rounded-full text-[11px]",
                   isToday
-                    ? "bg-red-500 font-semibold text-white"
+                    ? "bg-accent font-semibold text-white"
                     : cell.inMonth
-                      ? "text-gray-700"
-                      : "text-gray-300",
+                      ? "text-ink"
+                      : "text-ghost",
                 ].join(" ")}
               >
                 {cell.date.getDate()}
@@ -79,7 +79,7 @@ export default function MiniCalendar({
               <span
                 className={[
                   "mx-auto mt-0.5 h-1 w-1 rounded-full",
-                  hasDeadline && !isToday ? "bg-red-400" : "bg-transparent",
+                  hasDeadline && !isToday ? "bg-accent" : "bg-transparent",
                 ].join(" ")}
               />
             </div>

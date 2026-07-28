@@ -377,12 +377,12 @@ export default function CalendarView({
                 className={[
                   "flex flex-col gap-1 rounded-lg border border-line p-2",
                   calView === "week" ? "min-h-[240px]" : "min-h-[120px]",
-                  isToday ? "bg-red-50/40" : "bg-panel",
+                  isToday ? "bg-accent-fill" : "bg-panel",
                 ].join(" ")}
               >
                 <div className="flex justify-end">
                   {isToday ? (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-sm font-semibold text-white">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-sm font-semibold text-white">
                       {cell.date.getDate()}
                     </span>
                   ) : (
