@@ -1,4 +1,4 @@
-# Pathfinder
+# dblzerolabs
 
 A lightweight AI task manager for Data Scientists — with a PM-agent chat that helps you keep momentum, minus the gamification.
 
