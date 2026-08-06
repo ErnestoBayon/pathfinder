@@ -2,7 +2,7 @@
 
 A lightweight AI task manager for Data Scientists — with a PM-agent chat that helps you keep momentum, minus the gamification.
 
-**Live demo:** [pathfinder-eight-swart.vercel.app](https://pathfinder-eight-swart.vercel.app)
+**Live demo:** [https://dblzerolabs.com/)
 
 ![Approving an AI suggestion in Pathfinder](./docs/demo-overview.gif)
 
