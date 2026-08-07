@@ -111,7 +111,7 @@ export default function NewProjectModal({
                   className="h-6 w-6 rounded-full transition-transform duration-200 ease-out hover:scale-110"
                   style={{
                     backgroundColor: c,
-                    boxShadow: color === c ? `0 0 0 2px #ffffff, 0 0 0 4px ${c}` : undefined,
+                    boxShadow: color === c ? `0 0 0 2px #111111, 0 0 0 4px ${c}` : undefined,
                   }}
                 />
               ))}

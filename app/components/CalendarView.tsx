@@ -26,7 +26,9 @@ const DIAS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
 type PriorityFilter = Prioridad | "all";
 
-// Semaphore pills — active uses solid color, inactive uses tinted border.
+// Semaphore pills — active usa el color sólido de PRIORIDAD_COLORS.dot, inactive
+// usa el mismo dot como borde/texto con un tinte translúcido al hover (mismo
+// patrón "tinted pill" que el badge de prioridad en KanbanBoard/TaskDetailModal).
 const PRIORITY_FILTERS: { key: PriorityFilter; label: string; active: string; inactive: string }[] = [
   {
     key: "all",
@@ -37,20 +39,20 @@ const PRIORITY_FILTERS: { key: PriorityFilter; label: string; active: string; in
   {
     key: "High",
     label: "High",
-    active: "bg-red-600 text-white",
-    inactive: "border border-red-200 text-red-600 hover:bg-red-50",
+    active: "bg-[#DC2626] text-white",
+    inactive: "border border-[#DC262640] text-[#DC2626] hover:bg-[#DC262614]",
   },
   {
     key: "Medium",
     label: "Medium",
-    active: "bg-amber-600 text-white",
-    inactive: "border border-amber-200 text-amber-700 hover:bg-amber-50",
+    active: "bg-[#B45309] text-white",
+    inactive: "border border-[#B4530940] text-[#B45309] hover:bg-[#B4530914]",
   },
   {
     key: "Low",
     label: "Low",
     active: "bg-[#15803D] text-white",
-    inactive: "border border-[rgba(21,128,61,0.3)] text-[#15803D] hover:bg-[rgba(21,128,61,0.05)]",
+    inactive: "border border-[#15803D40] text-[#15803D] hover:bg-[#15803D14]",
   },
 ];
 
@@ -263,8 +265,8 @@ export default function CalendarView({
                     >
                       <span className="flex h-3 w-3 shrink-0 items-center justify-center">
                         {projectFilter === "all" && (
-                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                            <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#1F1F1D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="text-accent">
+                            <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         )}
                       </span>
@@ -284,8 +286,8 @@ export default function CalendarView({
                         >
                           <span className="flex h-3 w-3 shrink-0 items-center justify-center">
                             {active && (
-                              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                                <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#1F1F1D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="text-accent">
+                                <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                               </svg>
                             )}
                           </span>

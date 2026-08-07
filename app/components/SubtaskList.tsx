@@ -259,14 +259,17 @@ export default function SubtaskList({
 
       {/* Auto-sugerencia: cerrar la tarea cuando todas las subtareas están hechas. */}
       {showDoneBanner && (
-        <div className="mt-1 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+        <div
+          className="mt-1 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+          style={{ borderColor: "rgba(21,128,61,0.35)", backgroundColor: "rgba(21,128,61,0.12)", color: "#4ADE80" }}
+        >
           <span className="min-w-0 flex-1">
             ✓ All subtasks completed — mark task as done?
           </span>
           <button
             type="button"
             onClick={() => void markTaskDone()}
-            className="shrink-0 rounded-full bg-green-600 px-2.5 py-0.5 text-xs font-medium text-white transition-colors duration-200 ease-out hover:bg-green-700"
+            className="shrink-0 rounded-full bg-done px-2.5 py-0.5 text-xs font-medium text-white transition-opacity duration-200 ease-out hover:opacity-90"
           >
             Mark done
           </button>
@@ -274,7 +277,7 @@ export default function SubtaskList({
             type="button"
             onClick={() => setDismissed(true)}
             aria-label="Dismiss"
-            className="shrink-0 px-1 text-base leading-none text-green-700/70 transition-colors duration-200 ease-out hover:text-green-900"
+            className="shrink-0 px-1 text-base leading-none text-[#4ADE80]/70 transition-colors duration-200 ease-out hover:text-ink"
           >
             ×
           </button>

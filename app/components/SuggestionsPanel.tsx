@@ -83,7 +83,7 @@ export default function SuggestionsPanel({
           return (
             <li
               key={task.id}
-              className="flex items-center gap-3 rounded-xl border border-line bg-white p-3 shadow-sm"
+              className="flex items-center gap-3 rounded-xl border border-line bg-raise p-3"
               style={{ borderLeft: `4px solid ${GREEN}` }}
             >
               <span className="min-w-0 flex-1 whitespace-normal break-words text-sm text-ink">

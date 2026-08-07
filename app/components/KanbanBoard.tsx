@@ -267,7 +267,7 @@ function Column({
                     setConfirmClear(false);
                     onClearCompleted?.();
                   }}
-                  className="rounded px-1.5 py-0.5 text-xs font-medium text-red-600 transition-colors duration-200 ease-out hover:bg-red-50"
+                  className="rounded px-1.5 py-0.5 text-xs font-medium text-red-500 transition-colors duration-200 ease-out hover:bg-red-500/10"
                 >
                   Yes
                 </button>

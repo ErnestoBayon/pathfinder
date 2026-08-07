@@ -53,7 +53,7 @@ export default async function ProjectLayout({
             </h1>
           </div>
           {project.descripcion && (
-            <div className="mt-2 max-h-28 max-w-2xl overflow-y-auto rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm leading-relaxed text-gray-500">
+            <div className="mt-2 max-h-28 max-w-2xl overflow-y-auto rounded-lg border border-line bg-raise px-3 py-2 text-sm leading-relaxed text-dim">
               {project.descripcion}
             </div>
           )}

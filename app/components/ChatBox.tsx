@@ -184,7 +184,7 @@ body: JSON.stringify({ message: text, projectId }),
                 className={[
                   "max-w-[92%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
                   m.role === "user"
-                    ? "bg-[#EFEFEC] text-ink"
+                    ? "bg-accent text-[#0A0A0A]"
                     : "border border-line bg-panel text-ink",
                 ].join(" ")}
               >
