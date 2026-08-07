@@ -76,23 +76,31 @@ export default function ProjectCard({
   return (
     <Link
       href={`/proyecto/${project.id}`}
-      className="group relative flex flex-col rounded-2xl border border-[#ECECF1] bg-white p-[22px] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-note-hover"
-      style={{ borderLeft: `4px solid ${color}` }}
+      className="group relative flex flex-col rounded-2xl border border-line bg-panel p-[22px] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-note-hover"
+      style={{ borderLeft: `2px solid ${color}` }}
     >
-      <h3 className="truncate pr-7 text-[16px] font-semibold text-ink">{project.nombre}</h3>
+      <div className="flex items-center justify-between gap-2 pr-7">
+        <h3 className="truncate font-mono text-[16px] font-semibold text-ink">{project.nombre}</h3>
+        <span className="shrink-0 font-mono text-[11px] text-dim">{Math.round(pct)}%</span>
+      </div>
 
-      <p className="mt-1.5 line-clamp-2 min-h-[42px] text-[13.5px] leading-snug text-[#73737F]">
+      <p className="mt-1.5 line-clamp-2 min-h-[42px] text-[13.5px] leading-snug text-dim">
         {project.descripcion || "No description"}
       </p>
 
       {/* Barra de progreso: tareas completadas / total del proyecto. */}
-      <div className="mt-3 h-[5px] w-full overflow-hidden rounded bg-[#EFEFF3]">
+      <div className="mt-3 h-[3px] w-full overflow-hidden rounded bg-ghost">
         <div className="h-full rounded" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
 
-      <span className="mt-3 text-[13px] font-medium" style={{ color }}>
-        View project →
-      </span>
+      <div className="mt-3 flex items-center justify-between">
+        <span className="font-mono text-[11px] text-faint">
+          {done}/{total} tasks
+        </span>
+        <span className="font-mono text-[12px] font-medium text-accent opacity-0 transition-opacity duration-200 ease-out group-hover:opacity-100">
+          open →
+        </span>
+      </div>
 
       {/* Editor de color: punto + popover de swatches, arriba a la derecha. */}
       <div ref={ref} className="absolute right-3 top-3">
@@ -103,7 +111,7 @@ export default function ProjectCard({
           aria-label="Change project color"
           aria-haspopup="true"
           aria-expanded={open}
-          className="h-[18px] w-[18px] rounded-full ring-1 ring-black/10 transition-transform duration-200 ease-out hover:scale-110 disabled:opacity-50"
+          className="h-[18px] w-[18px] rounded-full ring-1 ring-white/10 transition-transform duration-200 ease-out hover:scale-110 disabled:opacity-50"
           style={{ backgroundColor: color }}
         />
         {open && (
@@ -113,7 +121,7 @@ export default function ProjectCard({
               e.preventDefault();
               e.stopPropagation();
             }}
-            className="absolute right-0 top-[26px] z-10 flex items-center gap-2 rounded-xl border border-[#ECECF1] bg-white p-2.5 shadow-note-hover"
+            className="absolute right-0 top-[26px] z-10 flex items-center gap-2 rounded-xl border border-line bg-panel p-2.5 shadow-note-hover"
           >
             {PROJECT_COLORS.map((c) => (
               <button
@@ -126,7 +134,7 @@ export default function ProjectCard({
                 className="h-5 w-5 rounded-full transition-transform duration-200 ease-out hover:scale-110"
                 style={{
                   backgroundColor: c,
-                  boxShadow: color === c ? `0 0 0 2px #ffffff, 0 0 0 4px ${c}` : undefined,
+                  boxShadow: color === c ? `0 0 0 2px #111111, 0 0 0 4px ${c}` : undefined,
                 }}
               />
             ))}

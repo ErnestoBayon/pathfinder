@@ -219,7 +219,7 @@ body: JSON.stringify({ message: text, projectId }),
           type="button"
           onClick={() => void send()}
           disabled={sending || input.trim() === ""}
-          className="bg-cta px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40 disabled:hover:bg-cta"
+          className="bg-cta px-6 py-3 text-sm font-semibold text-[#0A0A0A] transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40 disabled:hover:bg-cta"
         >
           Send
         </button>

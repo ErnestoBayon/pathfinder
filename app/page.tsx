@@ -56,7 +56,7 @@ export default function Landing() {
         {/* Square CTA — border-radius 0, matches marketing .btn.btn-solid */}
         <Link
           href="/home"
-          className="mt-10 inline-flex w-fit items-center gap-2.5 bg-cta px-[22px] py-3 font-mono text-xs font-medium uppercase tracking-[0.08em] text-white transition-colors duration-200 hover:bg-cta-hover"
+          className="mt-10 inline-flex w-fit items-center gap-2.5 bg-cta px-[22px] py-3 font-mono text-xs font-medium uppercase tracking-[0.08em] text-[#0A0A0A] transition-colors duration-200 hover:bg-cta-hover"
         >
           Enter <span aria-hidden="true">→</span>
         </Link>

@@ -277,7 +277,7 @@ export default function TaskDetailModal({
                 type="button"
                 onClick={() => void save()}
                 disabled={saving || !texto.trim()}
-                className="rounded-full bg-cta px-4 py-1.5 text-sm font-medium text-white transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40"
+                className="rounded-full bg-cta px-4 py-1.5 text-sm font-medium text-[#0A0A0A] transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40"
               >
                 {saving ? "Saving…" : "Save"}
               </button>

@@ -56,7 +56,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
           type="button"
           onClick={() => void continueWithGoogle()}
           disabled={loading}
-          className="mt-6 w-full bg-cta px-6 py-3 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40 disabled:hover:bg-cta"
+          className="mt-6 w-full bg-cta px-6 py-3 text-sm font-semibold text-[#0A0A0A] transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40 disabled:hover:bg-cta"
         >
           {loading ? "Connecting…" : "Continue with Google"}
         </button>

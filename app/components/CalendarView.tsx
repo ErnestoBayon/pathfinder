@@ -382,7 +382,7 @@ export default function CalendarView({
               >
                 <div className="flex justify-end">
                   {isToday ? (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-sm font-semibold text-white">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-sm font-semibold text-[#0A0A0A]">
                       {cell.date.getDate()}
                     </span>
                   ) : (

@@ -326,7 +326,7 @@ function Column({
               <button
                 type="submit"
                 disabled={!addText.trim()}
-                className="rounded-full bg-cta px-3 py-1 text-xs font-semibold text-white transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40"
+                className="rounded-full bg-cta px-3 py-1 text-xs font-semibold text-[#0A0A0A] transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40"
               >
                 Add
               </button>

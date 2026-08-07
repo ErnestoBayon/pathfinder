@@ -49,8 +49,27 @@ export default function HomeProjects({
     }
   }
 
+  const tasksDone = Object.values(taskCounts).reduce((sum, c) => sum + c.done, 0);
+  const tasksTotal = Object.values(taskCounts).reduce((sum, c) => sum + c.total, 0);
+  const tasksPending = tasksTotal - tasksDone;
+
   return (
     <>
+      {projects.length > 0 && (
+        <div className="mt-8 grid grid-cols-3 gap-4">
+          {[
+            { label: "// PROJECTS ACTIVE", value: projects.length },
+            { label: "// TASKS PENDING", value: tasksPending },
+            { label: "// TASKS COMPLETED", value: tasksDone },
+          ].map((stat) => (
+            <div key={stat.label} className="rounded-xl border border-line bg-panel px-4 py-3">
+              <p className="font-mono text-[10px] uppercase tracking-wide text-faint">{stat.label}</p>
+              <p className="mt-1 font-mono text-2xl font-semibold text-ink">{stat.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {projects.length === 0 ? (
         <div className="mx-auto mt-12 max-w-lg">
           <div className="text-center">
@@ -68,7 +87,7 @@ export default function HomeProjects({
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="w-full max-w-xs bg-cta px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-cta-hover"
+              className="w-full max-w-xs bg-cta px-5 py-2.5 text-sm font-semibold text-[#0A0A0A] transition-colors duration-200 ease-out hover:bg-cta-hover"
             >
               Create your first project
             </button>
@@ -84,7 +103,7 @@ export default function HomeProjects({
           </div>
         </div>
       ) : (
-        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
             <ProjectCard
               key={p.id}

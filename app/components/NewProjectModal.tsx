@@ -131,7 +131,7 @@ export default function NewProjectModal({
             <button
               type="submit"
               disabled={!nombre.trim() || saving}
-              className="bg-cta px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40 disabled:hover:bg-cta"
+              className="bg-cta px-5 py-2.5 text-sm font-semibold text-[#0A0A0A] transition-colors duration-200 ease-out hover:bg-cta-hover disabled:opacity-40 disabled:hover:bg-cta"
             >
               {saving ? "Creating…" : "Create"}
             </button>

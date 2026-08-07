@@ -3,15 +3,15 @@
 
 import type { Prioridad } from "./types";
 
-// Light-mode palette. All text colors verified on white (#FFFFFF) panel bg.
-// Contrast formula: (L_lighter + 0.05) / (L_darker + 0.05).
+// Dark-mode palette. 500-shades (brighter than the old light-mode 600-shades)
+// so borders/dots/text stay legible against the #111111 panel bg.
 export const PROJECT_COLORS = [
-  "#7C3AED", // violet-600  — 7.3:1 on white
-  "#0D9488", // teal-600    — 4.5:1 on white
-  "#D97706", // amber-600   — 4.5:1 on white
-  "#DB2777", // pink-600    — 5.4:1 on white
-  "#DC2626", // red-600     — 4.5:1 on white
-  "#0284C7", // sky-600     — 4.7:1 on white
+  "#8B5CF6", // violet-500
+  "#14B8A6", // teal-500
+  "#F59E0B", // amber-500
+  "#EC4899", // pink-500
+  "#EF4444", // red-500
+  "#0EA5E9", // sky-500
 ] as const;
 
 export const DEFAULT_PROJECT_COLOR = PROJECT_COLORS[0];

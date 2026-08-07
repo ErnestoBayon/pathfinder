@@ -8,35 +8,33 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // ── dblzero light tokens ─────────────────────────────────────────
+        // ── dblzero dark tokens ──────────────────────────────────────────
         // Surfaces
-        base:   "#F4F4F2", // page background — warm light gray
-        panel:  "#FFFFFF", // cards, panels
-        raise:  "#FAFAF8", // hover / slightly elevated
+        base:   "#0A0A0A", // page background — near-black
+        panel:  "#111111", // cards, panels
+        raise:  "#161616", // hover / slightly elevated
 
         // Text
-        ink:    "#1F1F1D", // primary text — soft near-black, never #000
-        dim:    "#6E6E68", // secondary text / metadata
-        faint:  "#9A9A93", // annotations, decorative labels (low contrast — decorative only)
-        ghost:  "#C4C4BC", // nearly invisible, dividers
+        ink:    "#E4E4E4", // primary text — soft near-white, never #FFF
+        dim:    "rgba(228,228,228,0.65)",  // secondary text / metadata
+        faint:  "rgba(228,228,228,0.40)",  // annotations, decorative labels (low contrast — decorative only)
+        ghost:  "rgba(255,255,255,0.15)",  // nearly invisible, dividers
 
         // Borders
-        line:         "rgba(0,0,0,0.07)",  // hairline 1px
-        "line-strong":"rgba(0,0,0,0.12)",  // active / hover borders
+        line:         "rgba(255,255,255,0.07)",  // hairline 1px
+        "line-strong":"rgba(255,255,255,0.14)",  // active / hover borders
 
-        // Accent — radar green
-        // #178A43 for text/icons on white/light bg (≈4.4:1 on #F4F4F2, 4.7:1 on #FFF)
-        accent:        "#178A43",
-        "accent-hover":"#14773A",
-        "accent-fill": "rgba(23,138,67,0.10)", // soft tint bg
+        // Accent — lime/chartreuse
+        accent:        "#D4FF00",
+        "accent-hover":"#BFE600",
+        "accent-fill": "rgba(212,255,0,0.10)", // soft tint bg
 
-        // Primary CTA — brighter green, white text
-        // Note: white on #1FA855 ≈ 3.1:1. Use at ≥16px bold or swap to #15803D for AA.
-        cta:        "#1FA855",
-        "cta-hover":"#1A9249",
+        // Primary CTA — same lime, black text (bg pairs with dark text, not white)
+        cta:        "#D4FF00",
+        "cta-hover":"#BFE600",
 
-        // Semantic
-        done: "#15803D", // completed state (5.1:1 on white)
+        // Semantic — unchanged: already verified for white text on fill, independent of page bg
+        done: "#15803D", // completed state (5.1:1 with white text)
 
         // (legacy aliases removed — all components now use canonical token names)
       },
@@ -45,8 +43,8 @@ const config: Config = {
         sans: ["var(--font-sans)", "-apple-system", "BlinkMacSystemFont", '"Segoe UI"', "sans-serif"],
       },
       boxShadow: {
-        note:        "0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.06)",
-        "note-hover":"0 4px 12px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.09)",
+        note:        "0 0 0 1px rgba(255,255,255,0.07)",
+        "note-hover":"0 0 0 1px rgba(255,255,255,0.14), 0 4px 16px rgba(212,255,0,0.08)",
       },
       keyframes: {
         bob: {

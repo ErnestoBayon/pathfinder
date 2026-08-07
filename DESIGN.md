@@ -13,19 +13,32 @@
 
 | Token | Hex | Uso |
 |---|---|---|
-| `canvas` | `#F8F9FA` | Fondo de página |
-| `surface` | `#FFFFFF` | Cards, modales, popovers |
-| `line` | `#E5E7EB` | Bordes sutiles |
-| `ink` | `#111827` | Texto principal |
-| `muted` | `#6B7280` | Metadata / texto secundario |
-| `accent` | `#4F46E5` | Índigo — CTA, focus ring |
-| `accent-hover` | `#4338CA` | Hover sobre accent |
-| `done` | `#16A34A` | Tarea completada, progreso 100% |
+| `base` | `#0A0A0A` | Fondo de página |
+| `panel` | `#111111` | Cards, modales, popovers |
+| `raise` | `#161616` | Hover / elevación sutil |
+| `ink` | `#E4E4E4` | Texto principal |
+| `dim` | `rgba(228,228,228,0.65)` | Metadata / texto secundario |
+| `faint` | `rgba(228,228,228,0.40)` | Anotaciones, labels decorativos |
+| `ghost` | `rgba(255,255,255,0.15)` | Divisores, casi invisible |
+| `line` | `rgba(255,255,255,0.07)` | Bordes hairline |
+| `line-strong` | `rgba(255,255,255,0.14)` | Bordes activos / hover |
+| `accent` | `#D4FF00` | Lima — links, focus ring, nav activa |
+| `accent-hover` | `#BFE600` | Hover sobre accent |
+| `accent-fill` | `rgba(212,255,0,0.10)` | Tint de fondo suave |
+| `cta` | `#D4FF00` | Mismo lima — botones de acción primaria (texto oscuro encima, nunca blanco) |
+| `cta-hover` | `#BFE600` | Hover sobre cta |
+| `done` | `#15803D` | Tarea completada, progreso 100% (sin cambios — ya daba buen contraste con texto blanco) |
+
+**Importante:** `accent`/`cta` son lima de alto brillo — cualquier botón con `bg-cta`/`bg-accent`
+usa texto oscuro (`text-[#0A0A0A]`), nunca `text-white`. Si agregas un botón nuevo con estos
+fondos, respeta esa regla o el texto queda ilegible.
 
 ### Colores de proyecto (`PROJECT_COLORS` + `DEFAULT_PROJECT_COLOR`)
 
-Seis acentos seleccionables; el primero es el default:
-`#5B5BD6` (índigo) · `#0E9F6E` · `#D97706` · `#EC4899` · `#E11D48` · `#0891B2`
+Seis acentos seleccionables (500-shades, más brillantes que un 600 para leerse bien
+sobre `panel` #111111); el primero es el default:
+`#8B5CF6` (violeta) · `#14B8A6` (teal) · `#F59E0B` (ámbar) · `#EC4899` (rosa) ·
+`#EF4444` (rojo) · `#0EA5E9` (sky)
 
 Se aplican como borde izquierdo de color en las cards del home, las filas de tarea,
 los chips del calendario, y el header de TaskDetailModal. Nunca como relleno de fondo.
@@ -50,25 +63,38 @@ Solo para el ⭐ y la pill "Keystones" en el filtro.
 
 ## Lenguaje visual
 
-**Modo claro.** Inspirado en Linear y Notion: limpio, funcional, sin decoración gratuita.
-Inter como fuente (fallback system-ui). Sombras suaves tipo sticky note (`shadow-note` /
-`shadow-note-hover`).
+**Modo oscuro.** Estética terminal/data-readout: fondo casi negro, acento lima,
+tipografía monoespaciada para labels/números/títulos (JetBrains Mono vía `font-mono`),
+Inter (`font-sans`) para texto de párrafo largo (descripciones, mensajes del chat).
+Sombras hairline en vez de drop-shadows (`shadow-note` / `shadow-note-hover`, ahora
+un borde de 1px + glow lima sutil al hover, no una sombra oscura — una sombra negra
+no se ve sobre fondo negro).
+
+> **Migración en progreso:** por ahora `ProjectCard`, `HomeProjects`, `TopNav`,
+> `NewProjectCard`, `AuthForm`, `page.tsx` (landing) y los tokens globales ya están en
+> modo oscuro. El resto de vistas (Board, Calendar, TaskDetailModal, SubtaskList,
+> ChatBox, Overview/TaskList, Archive) siguen con combinaciones puntuales pensadas
+> para el tema claro anterior (pills de prioridad, popovers, chips) — no asumas que ya
+> están migradas solo porque los tokens globales cambiaron. Ver Fase 2 del plan de
+> rediseño.
 
 - **Color como identidad, no como decoración.** El color de proyecto va en el borde
   izquierdo de la card o chip — nunca rellena el fondo completo.
-- **Tinted pills para prioridad.** Fondo tenue (0.12 opacity) + texto oscuro del mismo
-  matiz. Nunca sólidos ni con borde de color.
-- **Ghost chips para filtros.** Sin relleno en estado inactivo (`border-line`, texto muted);
+- **Lima (`accent`/`cta`) es de alto brillo — nunca combinar con `text-white`.** Usa
+  `text-[#0A0A0A]` (o el token equivalente) para texto/iconos sobre fondo `accent`/`cta`.
+- **Tinted pills para prioridad.** Fondo tenue (0.12 opacity) + texto del mismo matiz.
+  Nunca sólidos ni con borde de color. (Pendiente recalibrar para fondo oscuro, ver nota arriba.)
+- **Ghost chips para filtros.** Sin relleno en estado inactivo (`border-line`, texto `dim`);
   tinted al activarse (mismo patrón que las pills de prioridad).
 - **Segmented pill toggles** para Month/Week en el calendario: dos opciones, la activa
-  con `bg-surface shadow-sm`, la inactiva sin fondo.
+  con `bg-raise`, la inactiva sin fondo.
 - **Popover pattern:** click-outside + Escape lo cierra. Sin animación de entrada compleja
   — aparece directo. Usado en: selector de color de proyecto, dropdown de proyecto en el
   calendario global.
 - **Animaciones:** solo `transform` / `opacity`, máximo 300ms, `ease-out`, siempre en
   respuesta a acción del usuario. Nunca decorativas ni de entrada automática.
-- **Bordes:** 1px, `border-line` (`#E5E7EB`). `border-radius` moderado (6–12px en
-  elementos de UI, 16px en modales y cards grandes).
+- **Bordes:** 1px, `border-line` (`rgba(255,255,255,0.07)`). `border-radius` moderado
+  (6–12px en elementos de UI, 16px en modales y cards grandes).
 
 ---
 
@@ -76,9 +102,13 @@ Inter como fuente (fallback system-ui). Sombras suaves tipo sticky note (`shadow
 
 ### Home (`/home`)
 
-Grid de project cards. Cada card es un sticky note: `bg-surface shadow-note`, borde
-izquierdo grueso con `project.color`, punto de color en el nombre. Progreso de tareas
-(`done / total`) en texto muted. Card "+" para crear proyecto.
+Fila de 3 KPI tiles (proyectos activos, tareas pendientes, tareas completadas —
+`font-mono`, label en mayúsculas estilo `// COMMENT`) encima del grid de project cards.
+Cada card: `bg-panel`, borde `border-line` + borde izquierdo 2px con `project.color`,
+título en `font-mono`, `%` completado arriba a la derecha, barra de progreso delgada
+(1px→3px) con `project.color`, footer con `done/total tasks` y un `open →` en `accent`
+que solo aparece al hover (`opacity-0 group-hover:opacity-100`). Card "+" para crear
+proyecto (`NewProjectCard`, ya en tokens dark).
 
 ### Proyecto overview (`/proyecto/[id]`)
 
@@ -131,8 +161,9 @@ Abre sobre la lista o el board. Header con color de proyecto. Edita: título, pr
 
 ### ProjectCard (home)
 
-`border-l-4` con `project.color`. Sombra `note` / `note-hover`. Sin hover de fondo —
-la sombra es el único efecto.
+`border-l-2` con `project.color` sobre `bg-panel`. Título `font-mono`. Sombra `note` /
+`note-hover` (hairline + glow lima) y un lift sutil (`-translate-y-0.5`) al hover.
+`open →` con fade-in al hover, no siempre visible.
 
 ---
 

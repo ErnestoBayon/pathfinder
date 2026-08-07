@@ -67,7 +67,7 @@ export default function MiniCalendar({
                 className={[
                   "flex h-5 w-5 items-center justify-center rounded-full text-[11px]",
                   isToday
-                    ? "bg-accent font-semibold text-white"
+                    ? "bg-accent font-semibold text-[#0A0A0A]"
                     : cell.inMonth
                       ? "text-ink"
                       : "text-ghost",
