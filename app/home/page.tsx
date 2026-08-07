@@ -17,8 +17,8 @@ export default async function Home() {
           <p className="font-mono text-xs font-semibold text-ink">
             dblzero<span className="text-accent">//</span><span className="text-dim">labs</span>
           </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-            Your projects
+          <h1 className="mt-2 font-mono text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+            your projects
           </h1>
         </div>
         <div className="flex items-center gap-4">

@@ -56,17 +56,29 @@ export default function HomeProjects({
   return (
     <>
       {projects.length > 0 && (
-        <div className="mt-8 grid grid-cols-3 gap-4">
-          {[
-            { label: "// PROJECTS ACTIVE", value: projects.length },
-            { label: "// TASKS PENDING", value: tasksPending },
-            { label: "// TASKS COMPLETED", value: tasksDone },
-          ].map((stat) => (
-            <div key={stat.label} className="rounded-xl border border-line bg-panel px-4 py-3">
-              <p className="font-mono text-[10px] uppercase tracking-wide text-faint">{stat.label}</p>
-              <p className="mt-1 font-mono text-2xl font-semibold text-ink">{stat.value}</p>
-            </div>
-          ))}
+        <div className="mt-8 flex items-start justify-between gap-4">
+          <div className="grid flex-1 grid-cols-3 gap-4">
+            {[
+              { label: "// PROJECTS ACTIVE", value: projects.length, sublabel: null },
+              { label: "// TASKS PENDING", value: tasksPending, sublabel: `of ${tasksTotal} total tasks` },
+              { label: "// TASKS COMPLETED", value: tasksDone, sublabel: `of ${tasksTotal} total tasks` },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-xl border border-line bg-panel px-4 py-3">
+                <p className="font-mono text-[10px] uppercase tracking-wide text-faint">{stat.label}</p>
+                <p className="mt-1 font-mono text-2xl font-semibold text-ink">{stat.value}</p>
+                {stat.sublabel && (
+                  <p className="mt-1 font-mono text-[10px] text-faint">{stat.sublabel}</p>
+                )}
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="flex shrink-0 items-center gap-1.5 rounded border border-line px-3 py-1.5 font-mono text-xs text-dim transition-colors duration-200 ease-out hover:border-accent hover:text-ink"
+          >
+            <span aria-hidden>+</span> new project
+          </button>
         </div>
       )}
 
